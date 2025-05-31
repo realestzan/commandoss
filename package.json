@@ -6,7 +6,20 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "d": "next dev --turbopack",
+    "b": "next build",
+    "ga": "git add .",
+    "gc": "git commit -m",
+    "gp": "git push",
+    "pgg": "drizzle-kit generate",
+    "pgm": "drizzle-kit migrate",
+    "pgp": "drizzle-kit push",
+    "dbdc": "dbdocs db2dbml postgres postgresql://bitkhum_owner:3KSwu5kDvngf@ep-silent-salad-a1gnoisj.ap-southeast-1.aws.neon.tech/bitkhum?sslmode=require -o database.dbml",
+    "dbdb": "dbdocs build database.dbml --project bitkhum",
+    "tree": "tree src/ -L 2 --charset utf-8 --dirsfirst > structure.txt",
+    "deploy": "next build && vercel deploy --prod",
+    "ss": " drizzle-kit studio"
   },
   "dependencies": {
     "react": "^19.0.0",
