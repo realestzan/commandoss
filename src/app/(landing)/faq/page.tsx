@@ -4,15 +4,19 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Footer } from '@/components/ui/footer'
+import { ThemeToggle } from '@/components/ui/toggle-theme'
+import { motion } from 'framer-motion'
 import {
     ArrowLeft,
+    ArrowRight,
     BarChart3,
     Bot,
     ChevronDown,
     CreditCard,
     HelpCircle,
     MessageCircle,
-    Shield
+    Shield,
+    Sparkles
 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -31,7 +35,9 @@ export default function FAQPage() {
     const faqCategories = [
         {
             title: 'Getting Started',
-            icon: <Bot className='w-5 h-5 text-emerald-500' />,
+            icon: <Bot className='w-6 h-6 text-white' />,
+            gradient: 'from-emerald-400 to-emerald-500',
+            colSpan: 'lg:col-span-2',
             questions: [
                 {
                     question: 'What is Realfin and how does it work?',
@@ -53,7 +59,9 @@ export default function FAQPage() {
         },
         {
             title: 'AI Chat Features',
-            icon: <MessageCircle className='w-5 h-5 text-blue-500' />,
+            icon: <MessageCircle className='w-6 h-6 text-white' />,
+            gradient: 'from-emerald-500 to-emerald-600',
+            colSpan: 'lg:col-span-1',
             questions: [
                 {
                     question: 'What can I ask the AI assistant?',
@@ -75,7 +83,9 @@ export default function FAQPage() {
         },
         {
             title: 'Privacy & Security',
-            icon: <Shield className='w-5 h-5 text-green-500' />,
+            icon: <Shield className='w-6 h-6 text-white' />,
+            gradient: 'from-emerald-600 to-emerald-700',
+            colSpan: 'lg:col-span-1',
             questions: [
                 {
                     question: 'How secure is my financial data?',
@@ -97,11 +107,13 @@ export default function FAQPage() {
         },
         {
             title: 'Features & Pricing',
-            icon: <CreditCard className='w-5 h-5 text-purple-500' />,
+            icon: <CreditCard className='w-6 h-6 text-white' />,
+            gradient: 'from-emerald-300 to-emerald-400',
+            colSpan: 'lg:col-span-2',
             questions: [
                 {
-                    question: 'What&rsquo;s included in the free plan?',
-                    answer: 'The free plan includes basic budget tracking, expense logging, 50 AI chat messages per month, 5 financial notes, mobile app access, and basic analytics. It&rsquo;s perfect for getting started with AI-powered finance management.'
+                    question: 'What\'s included in the free plan?',
+                    answer: 'The free plan includes basic budget tracking, expense logging, 50 AI chat messages per month, 5 financial notes, mobile app access, and basic analytics. It\'s perfect for getting started with AI-powered finance management.'
                 },
                 {
                     question: 'What are the benefits of upgrading to Pro?',
@@ -113,13 +125,15 @@ export default function FAQPage() {
                 },
                 {
                     question: 'Do you offer refunds?',
-                    answer: 'We offer a 30-day money-back guarantee for new subscribers. If you&rsquo;re not satisfied with Realfin Pro, contact our support team within 30 days for a full refund.'
+                    answer: 'We offer a 30-day money-back guarantee for new subscribers. If you\'re not satisfied with Realfin Pro, contact our support team within 30 days for a full refund.'
                 }
             ]
         },
         {
             title: 'Analytics & Insights',
-            icon: <BarChart3 className='w-5 h-5 text-orange-500' />,
+            icon: <BarChart3 className='w-6 h-6 text-white' />,
+            gradient: 'from-emerald-500 to-emerald-600',
+            colSpan: 'lg:col-span-1',
             questions: [
                 {
                     question: 'What kind of insights does Realfin provide?',
@@ -144,22 +158,31 @@ export default function FAQPage() {
     return (
         <main className='min-h-screen bg-background'>
             {/* Header */}
-            <header className='flex items-center justify-between p-10 max-w-7xl mx-auto'>
-                <Link href='/' className='flex items-center gap-2 text-foreground hover:text-foreground/80 transition-colors'>
-                    <ArrowLeft className='w-5 h-5' />
-                    <span>Back to Home</span>
+            <header className='flex items-center justify-between p-6 max-w-7xl mx-auto'>
+                <Link href='/' className='flex items-center gap-3 text-foreground hover:text-emerald-600 transition-colors group'>
+                    <motion.div
+                        whileHover={{ x: -4 }}
+                        className='flex items-center gap-2'
+                    >
+                        <ArrowLeft className='w-5 h-5 group-hover:text-emerald-600 transition-colors' />
+                        <span className='font-medium'>Back to Home</span>
+                    </motion.div>
                 </Link>
 
                 <div className='flex items-center gap-2'>
-                    <div className='w-8 h-8 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center'>
-                        <Bot className='w-5 h-5 text-white' />
-                    </div>
-                    <span className='text-xl font-bold text-foreground'>Realfin</span>
+                    <motion.div
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        whileTap={{ scale: 0.95 }}
+                        className='w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md'
+                    >
+                        <div className='w-4 h-4 bg-white rounded-full'></div>
+                    </motion.div>
+                    <span className='text-xl font-bold'>Realfin</span>
                 </div>
 
                 <div className='flex items-center gap-3'>
                     <Link href='/auth'>
-                        <Button variant='ghost' className='text-foreground/70 hover:text-foreground'>
+                        <Button variant='ghost' className=''>
                             Log in
                         </Button>
                     </Link>
@@ -168,94 +191,171 @@ export default function FAQPage() {
                             Sign up
                         </Button>
                     </Link>
+                    <ThemeToggle />
                 </div>
             </header>
 
-            {/* FAQ Section */}
-            <section className='max-w-4xl mx-auto px-6 py-20'>
-                {/* Title */}
-                <div className='text-center mb-16'>
-                    <div className='w-16 h-16 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6'>
-                        <HelpCircle className='w-8 h-8 text-white' />
-                    </div>
-                    <h1 className='text-5xl font-bold text-foreground mb-4'>
-                        Frequently Asked Questions
-                    </h1>
-                    <p className='text-xl text-foreground/70'>
-                        Everything you need to know about Realfin
-                    </p>
+            {/* Hero Section */}
+            <section className='max-w-7xl mx-auto px-6 py-16'>
+                <div className='text-center max-w-4xl mx-auto mb-20'>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6 }}
+                        className='w-20 h-20 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl'
+                    >
+                        <HelpCircle className='w-10 h-10 text-white' />
+                    </motion.div>
+
+                    <motion.h1
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.1 }}
+                        className='text-6xl font-bold text-foreground leading-tight mb-6'
+                    >
+                        Frequently Asked
+                        <br />
+                        <span className='text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-emerald-600'>
+                            Questions
+                        </span>
+                    </motion.h1>
+
+                    <motion.p
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.2 }}
+                        className='text-xl text-foreground/70 leading-relaxed'
+                    >
+                        Everything you need to know about your AI-powered
+                        <br />
+                        finance assistant
+                    </motion.p>
                 </div>
 
-                {/* FAQ Categories */}
-                <div className='space-y-12'>
+                {/* FAQ Categories Grid */}
+                <div className='grid lg:grid-cols-3 gap-8'>
                     {faqCategories.map((category, categoryIndex) => (
-                        <div key={category.title}>
-                            {/* Category Header */}
-                            <div className='flex items-center gap-3 mb-6'>
-                                {category.icon}
-                                <h2 className='text-2xl font-bold text-foreground'>
-                                    {category.title}
-                                </h2>
-                            </div>
+                        <motion.div
+                            key={category.title}
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: categoryIndex * 0.1 }}
+                            className={category.colSpan}
+                        >
+                            {/* Category Header Card */}
+                            <Card className={`bg-gradient-to-r ${category.gradient} p-8 rounded-3xl mb-6 shadow-xl`}>
+                                <div className='flex items-center gap-4'>
+                                    <div className='w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm'>
+                                        {category.icon}
+                                    </div>
+                                    <div>
+                                        <h2 className='text-2xl font-bold text-white mb-1'>
+                                            {category.title}
+                                        </h2>
+                                        <p className='text-white/80 text-sm'>
+                                            {category.questions.length} questions answered
+                                        </p>
+                                    </div>
+                                </div>
+                            </Card>
 
-                            {/* Questions */}
-                            <div className='space-y-4'>
+                            {/* Questions Grid */}
+                            <div className='grid gap-3'>
                                 {category.questions.map((faq, questionIndex) => {
                                     const itemIndex = categoryIndex * 100 + questionIndex
                                     const isOpen = openItems.includes(itemIndex)
 
                                     return (
-                                        <Card key={questionIndex} className='overflow-hidden'>
-                                            <Collapsible
-                                                open={isOpen}
-                                                onOpenChange={() => toggleItem(itemIndex)}
-                                            >
-                                                <CollapsibleTrigger className='w-full'>
-                                                    <div className='flex items-center justify-between p-6 hover:bg-card/50 transition-colors'>
-                                                        <h3 className='text-left font-semibold text-foreground'>
-                                                            {faq.question}
-                                                        </h3>
-                                                        <ChevronDown
-                                                            className={`w-5 h-5 text-foreground/60 transition-transform ${isOpen ? 'rotate-180' : ''
-                                                                }`}
-                                                        />
-                                                    </div>
-                                                </CollapsibleTrigger>
-                                                <CollapsibleContent>
-                                                    <CardContent className='pt-0 pb-6 px-6'>
-                                                        <p className='text-foreground/70 leading-relaxed'>
-                                                            {faq.answer}
-                                                        </p>
-                                                    </CardContent>
-                                                </CollapsibleContent>
-                                            </Collapsible>
-                                        </Card>
+                                        <motion.div
+                                            key={questionIndex}
+                                            whileHover={{ scale: 1.01 }}
+                                            transition={{ type: 'spring', stiffness: 300 }}
+                                        >
+                                            <Card className='overflow-hidden rounded-2xl shadow-md hover:shadow-lg transition-all duration-300 border-0 bg-card/50 backdrop-blur-sm'>
+                                                <Collapsible
+                                                    open={isOpen}
+                                                    onOpenChange={() => toggleItem(itemIndex)}
+                                                >
+                                                    <CollapsibleTrigger className='w-full'>
+                                                        <div className='flex items-center justify-between p-5 hover:bg-foreground/5 transition-colors'>
+                                                            <h3 className='text-left font-semibold text-foreground text-base leading-relaxed'>
+                                                                {faq.question}
+                                                            </h3>
+                                                            <motion.div
+                                                                animate={{ rotate: isOpen ? 180 : 0 }}
+                                                                transition={{ duration: 0.2 }}
+                                                                className='ml-3 flex-shrink-0'
+                                                            >
+                                                                <div className='w-7 h-7 bg-emerald-100 rounded-full flex items-center justify-center'>
+                                                                    <ChevronDown className='w-3.5 h-3.5 text-emerald-600' />
+                                                                </div>
+                                                            </motion.div>
+                                                        </div>
+                                                    </CollapsibleTrigger>
+                                                    <CollapsibleContent>
+                                                        <motion.div
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            transition={{ duration: 0.3 }}
+                                                        >
+                                                            <CardContent className='pt-0 pb-5 px-5'>
+                                                                <div className='border-t border-foreground/10 pt-3'>
+                                                                    <p className='text-foreground/70 leading-relaxed text-sm'>
+                                                                        {faq.answer}
+                                                                    </p>
+                                                                </div>
+                                                            </CardContent>
+                                                        </motion.div>
+                                                    </CollapsibleContent>
+                                                </Collapsible>
+                                            </Card>
+                                        </motion.div>
                                     )
                                 })}
                             </div>
-                        </div>
+                        </motion.div>
                     ))}
                 </div>
 
-                {/* Contact Section */}
-                <div className='mt-20 text-center bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 rounded-3xl p-12'>
-                    <h2 className='text-3xl font-bold text-foreground mb-4'>
-                        Still have questions?
-                    </h2>
-                    <p className='text-xl text-foreground/70 mb-8'>
-                        Our support team is here to help you get the most out of Realfin
-                    </p>
-                    <div className='flex flex-col sm:flex-row gap-4 justify-center'>
-                        <Link href='/auth'>
-                            <Button className='bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-500 text-white px-8 py-6 text-lg rounded-full'>
-                                Start Free Trial
-                            </Button>
-                        </Link>
-                        <Button variant='outline' className='px-8 py-6 text-lg rounded-full'>
-                            Contact Support
-                        </Button>
-                    </div>
-                </div>
+                {/* Enhanced Contact Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.8 }}
+                    className='mt-24'
+                >
+                    <Card className='bg-gradient-to-br from-emerald-500/10 via-emerald-400/5 to-emerald-600/10 rounded-3xl p-12 border-emerald-200/20 shadow-2xl backdrop-blur-sm'>
+                        <div className='text-center'>
+                            <div className='w-16 h-16 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg'>
+                                <Sparkles className='w-8 h-8 text-white' />
+                            </div>
+
+                            <h2 className='text-4xl font-bold text-foreground mb-4'>
+                                Still have questions?
+                            </h2>
+                            <p className='text-xl text-foreground/70 mb-8 max-w-2xl mx-auto leading-relaxed'>
+                                Our support team is here to help you get the most out of Realfin.
+                                Start your journey to better financial management today.
+                            </p>
+
+                            <div className='flex flex-col sm:flex-row gap-4 justify-center'>
+                                <Link href='/auth'>
+                                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                        <Button className='bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-500 text-white px-8 py-6 text-lg rounded-full shadow-lg'>
+                                            Start Free Trial
+                                            <ArrowRight className='w-5 h-5 ml-2' />
+                                        </Button>
+                                    </motion.div>
+                                </Link>
+                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                                    <Button variant='outline' className='px-8 py-6 text-lg rounded-full border-emerald-200 hover:bg-emerald-50 hover:border-emerald-300'>
+                                        Contact Support
+                                    </Button>
+                                </motion.div>
+                            </div>
+                        </div>
+                    </Card>
+                </motion.div>
             </section>
 
             <Footer />

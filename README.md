@@ -18,7 +18,7 @@ An intelligent personal finance management platform with AI-powered chatbot capa
 
 ### 🔐 Crypto Integration
 - **Wallet Connectivity**: Support for Phantom and Slush wallets
-- **SUI Blockchain**: Send and receive SUI cryptocurrency
+- **SUI Blockchain**: Send SUI cryptocurrency
 - **Secure Transactions**: Safe and encrypted crypto operations
 
 ### 🎨 Modern UI/UX
@@ -42,65 +42,6 @@ An intelligent personal finance management platform with AI-powered chatbot capa
 - **Text-to-Speech**: ElevenLabs
 - **Crypto Wallets**: Phantom Wallet, Slush Wallet
 
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
-- Firebase project
-- Required API keys (OpenAI, Groq, ElevenLabs)
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd personal-finance-chatbot
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-
-3. **Environment Setup**
-   Create a `.env.local` file in the root directory:
-   ```env
-   # Firebase
-   NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-
-   # AI Services
-   OPENAI_API_KEY=your_openai_api_key
-   GROQ_API_KEY=your_groq_api_key
-   ELEVENLABS_API_KEY=your_elevenlabs_api_key
-
-   # Crypto (if needed)
-   NEXT_PUBLIC_NETWORK=mainnet-beta
-   ```
-
-4. **Firebase Configuration**
-   - Create a Firebase project
-   - Enable Authentication (Email/Password, Google)
-   - Set up Firestore database
-   - Configure security rules
-
-5. **Run the development server**
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
-
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## 📱 Usage
 
 ### Getting Started with the Chatbot
 1. **Sign Up/Login**: Create an account or sign in with existing credentials
@@ -120,15 +61,68 @@ An intelligent personal finance management platform with AI-powered chatbot capa
 
 ```
 src/
-├── app/                    # Next.js app directory
-├── components/             # Reusable UI components
-├── lib/
-│   ├── types.ts           # TypeScript type definitions
-│   ├── firebase.ts        # Firebase configuration
-│   ├── ai/                # AI service integrations
-│   └── crypto/            # Crypto wallet utilities
-├── hooks/                 # Custom React hooks
-└── utils/                 # Utility functions
+├─ app/
+│  ├─ (landing)/
+│  │  ├─ faq/
+│  │  │  └─ page.tsx
+│  │  ├─ how-it-works/
+│  │  │  └─ page.tsx
+│  │  ├─ pricing/
+│  │  │  └─ page.tsx
+│  │  └─ page.tsx
+│  ├─ (user)/
+│  │  ├─ chat/
+│  │  │  ├─ transfer/
+│  │  │  │  └─ page.tsx
+│  │  │  ├─ chat.tsx
+│  │  │  ├─ edit-conversation-dialog.tsx
+│  │  │  ├─ history.tsx
+│  │  │  ├─ input.tsx
+│  │  │  ├─ intro.tsx
+│  │  │  ├─ message-loading.tsx
+│  │  │  ├─ message.tsx
+│  │  │  └─ page.tsx
+│  │  ├─ settings/
+│  │  │  └─ page.tsx
+│  │  ├─ stats/
+│  │  │  ├─ bgr.tsx
+│  │  │  └─ page.tsx
+│  │  ├─ tracker/
+│  │  │  ├─ loading.tsx
+│  │  │  ├─ manual.tsx
+│  │  │  └─ page.tsx
+│  │  ├─ header.tsx
+│  │  ├─ layout.tsx
+│  │  └─ sidebar.tsx
+│  ├─ api/
+│  │  ├─ chat/
+│  │  │  ├─ gpt/
+│  │  │  │  ├─ test/
+│  │  │  │  │  └─ route.ts
+│  │  │  │  └─ route.ts
+│  │  │  └─ route.ts
+│  │  └─ tts/
+│  │     ├─ test/
+│  │     │  └─ route.ts
+│  │     └─ route.ts
+│  ├─ auth/
+│  │  └─ page.tsx
+│  ├─ favicon.ico
+│  ├─ globals.css
+│  └─ layout.tsx
+├─ components/
+├─ hooks/
+│  ├─ use-auth.ts
+│  └─ use-mobile.ts
+└─ lib/
+   ├─ auth.ts
+   ├─ chat-service.ts
+   ├─ chat.ts
+   ├─ firebase.ts
+   ├─ services.ts
+   ├─ types.ts
+   └─ utils.ts
+
 ```
 
 ## 🔧 API Routes
