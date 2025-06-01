@@ -55,6 +55,7 @@ export default function ChatPage() {
     }
 
     const handleActionClick = (action: string) => {
+        // Handle other actions that open manual entry
         const actionTypeMap: Record<string, ManualEntryType> = {
             'add-transaction': 'transaction',
             'add-budget': 'budget',

@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { Bot, CheckCircle2, Copy, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useState } from 'react'
+import Markdown from 'react-markdown'
 
 interface MessageProps {
     id: string
@@ -61,7 +62,7 @@ export function Message({
             >
                 <div className="flex items-start gap-3 max-w-[80%]">
                     <div className="flex flex-col items-end">
-                        <Card className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white p-4 rounded-3xl rounded-tr-sm mt-8">
+                        <Card className="bg-gradient-to-br from-emerald-400 to-emerald-600 text-white p-4 rounded-3xl rounded-tr-sm mt-8">
                             <p className="text-sm leading-relaxed">{content}</p>
                         </Card>
                     </div>
@@ -89,7 +90,7 @@ export function Message({
                     </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col flex-1">
-                    <Card className="bg-card border border-emerald-100 p-4 rounded-3xl rounded-tl-sm mt-8">
+                    <Card className="bg-background border border-emerald-100 p-4 rounded-3xl rounded-tl-sm mt-8">
                         {isLoading ? (
                             <div className="flex items-center gap-2">
                                 <div className="flex space-x-1">
@@ -102,9 +103,7 @@ export function Message({
                         ) : (
                             <>
                                 <div className="prose prose-sm max-w-none">
-                                    <p className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
-                                        {content}
-                                    </p>
+                                    <Markdown >{content}</Markdown>
                                 </div>
 
                                 {/* Action Buttons */}

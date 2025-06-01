@@ -295,7 +295,7 @@ export default function TrackerPage() {
                 <>
                     {/* Summary Cards */}
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-                        <Card className='bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl rounded-3xl'>
+                        <Card className='bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl rounded-3xl p-0 h-fit'>
                             <CardContent className='p-6'>
                                 <div className='flex items-center justify-between'>
                                     <div>
@@ -313,7 +313,7 @@ export default function TrackerPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className='bg-background hover:shadow-2xl shadow-emerald-800/20 transition-shadow duration-300 rounded-3xl'>
+                        <Card className='bg-background hover:shadow-2xl shadow-emerald-800/20 transition-shadow duration-300 rounded-3xl p-0 h-fit'>
                             <CardContent className='p-6'>
                                 <div className='flex items-center justify-between'>
                                     <div>
@@ -331,7 +331,7 @@ export default function TrackerPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className='bg-background hover:shadow-2xl shadow-emerald-800/20 transition-shadow duration-300 rounded-3xl'>
+                        <Card className='bg-background hover:shadow-2xl shadow-emerald-800/20 transition-shadow duration-300 rounded-3xl p-0 h-fit'>
                             <CardContent className='p-6'>
                                 <div className='flex items-center justify-between'>
                                     <div>

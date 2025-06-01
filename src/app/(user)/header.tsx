@@ -1,3 +1,4 @@
+import SearchDialog from "@/components/search";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,11 +7,25 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { User } from "@/lib/types";
 import { AlertTriangle, Bell, CheckCircle2, DollarSign, Search, Settings, Target } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Header({ user }: { user?: User }) {
 
     const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+    // Command+K keyboard shortcut
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setIsSearchOpen(true);
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     if (!user) {
         return null;
@@ -48,11 +63,20 @@ export default function Header({ user }: { user?: User }) {
                     <div className='flex items-center gap-4 flex-1 max-w-md'>
                         <div className='relative flex-1'>
                             <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4' />
-                            <Input
-                                placeholder='Search everything...'
-                                className='py-6 pl-10 border-none shadow-none bg-background rounded-3xl focus:ring-2 focus:ring-emerald-500 transition-all duration-300'
-                            />
-                            <Badge variant='outline' className='absolute right-3 top-1/2 transform -translate-y-1/2 border-emerald-200 text-emerald-600'>
+                            <div
+                                onClick={() => setIsSearchOpen(true)}
+                                className='cursor-pointer'
+                            >
+                                <Input
+                                    placeholder='Search everything...'
+                                    className='py-6 pl-10 border-none shadow-none bg-background rounded-3xl focus:ring-2 focus:ring-emerald-500 transition-all duration-300 cursor-pointer'
+                                    readOnly
+                                />
+                            </div>
+                            <Badge
+                                variant='outline'
+                                className='absolute right-3 top-1/2 transform -translate-y-1/2 border-emerald-200 text-emerald-600 pointer-events-none'
+                            >
                                 ⌘ K
                             </Badge>
                         </div>
@@ -173,6 +197,11 @@ export default function Header({ user }: { user?: User }) {
                     </div>
                 </div>
             </header>
+
+            <SearchDialog
+                isOpen={isSearchOpen}
+                onClose={() => setIsSearchOpen(false)}
+            />
         </>
     )
 }

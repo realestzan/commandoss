@@ -3,9 +3,12 @@
 import { ChatService } from '@/lib/chat-service'
 import { ChatMessage, User } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { ConnectButton, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
+import { Transaction } from '@mysten/sui/transactions'
 import { motion, Variants } from 'framer-motion'
-import { Bot, ChevronUp, Save } from 'lucide-react'
+import { AlertCircle, Bot, CheckCircle, ChevronUp, Coins, Copy, ExternalLink, Save, Send, Wallet } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { ChatInput } from './input'
 import { Message } from './message'
 import MessageLoading from './message-loading'
@@ -14,6 +17,23 @@ import MessageLoading from './message-loading'
 interface InternalChatMessage extends Omit<ChatMessage, 'timestamp'> {
     timestamp: Date
     isLoading?: boolean
+    transferData?: TransferCommand
+    transferStatus?: TransferStatus
+}
+
+// Transfer command interface
+interface TransferCommand {
+    amount: number
+    currency: string
+    toAddress: string
+    originalMessage: string
+}
+
+// Transfer status interface
+interface TransferStatus {
+    status: 'idle' | 'pending' | 'success' | 'error'
+    message: string
+    signature?: string
 }
 
 interface ChatProps {
@@ -63,7 +83,8 @@ Your capabilities include:
 4. **Financial Goals**: Create and track savings goals
 5. **Bank Accounts**: Add and manage bank accounts
 6. **Recurring Items**: Set up recurring income or bills
-7. **Financial Insights**: Provide spending analysis and suggestions
+7. **SUI Crypto Transfers**: Send SUI cryptocurrency using natural language commands with Slush wallet
+8. **Financial Insights**: Provide spending analysis and suggestions
 
 When users ask for help with financial tasks, you should:
 - Provide helpful financial advice
@@ -71,6 +92,13 @@ When users ask for help with financial tasks, you should:
 - Give suggestions for better financial management
 - Be concise but informative
 - Use their name and currency preferences
+
+For SUI crypto transfers, users can say things like:
+- "send 0.2 SUI to [address] for me"
+- "transfer 5 SUI to [wallet address]"
+- "pay 0.1 SUI to [recipient]"
+
+When detecting SUI transfer requests, guide them to use the crypto transfer feature with Slush wallet.
 
 If a user wants to add any financial data, offer action buttons to help them do so directly.
 
@@ -86,6 +114,11 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
     const chatContainerRef = useRef<HTMLDivElement>(null)
     const messageIdCounter = useRef(0)
     const initialInputProcessed = useRef(false)
+
+    // Wallet and transfer hooks
+    const currentAccount = useCurrentAccount()
+    const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
+    const [copied, setCopied] = useState(false)
 
     // Generate unique message ID
     const generateMessageId = () => {
@@ -172,6 +205,10 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
         if (content.toLowerCase().includes('goal') || content.toLowerCase().includes('save')) {
             suggestions.push('Set savings goal', 'Track progress')
         }
+        // Add crypto transfer suggestions
+        if (content.toLowerCase().includes('crypto') || content.toLowerCase().includes('transfer') || content.toLowerCase().includes('send')) {
+            suggestions.push('Crypto Transfer', 'Connect Wallet', 'View Transfer History')
+        }
 
         // Default suggestions if none match
         if (suggestions.length === 0) {
@@ -181,7 +218,33 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
         return suggestions.slice(0, 3) // Limit to 3 suggestions
     }
 
-    const generateActionButtons = (content: string) => {
+    // Function to detect crypto transfer commands
+    const detectCryptoTransfer = (input: string) => {
+        const patterns = [
+            /send\s+(\d+(?:\.\d+)?)\s+(sui)\s+to\s+(?:this\s+address\s+)?([a-zA-Z0-9]{64,66})/i,
+            /transfer\s+(\d+(?:\.\d+)?)\s+(sui)\s+to\s+([a-zA-Z0-9]{64,66})/i,
+            /pay\s+(\d+(?:\.\d+)?)\s+(sui)\s+to\s+([a-zA-Z0-9]{64,66})/i
+        ]
+
+        for (const pattern of patterns) {
+            const match = input.match(pattern)
+            if (match) {
+                const [, amount, currency, address] = match
+                // Validate SUI address format
+                if (!address.startsWith('0x') || (address.length !== 64 && address.length !== 66)) {
+                    return null
+                }
+                return {
+                    amount: parseFloat(amount),
+                    currency: currency.toUpperCase(),
+                    toAddress: address
+                }
+            }
+        }
+        return null
+    }
+
+    const generateActionButtons = (content: string, userInput?: string) => {
         const buttons: { label: string; action: string; variant?: 'primary' | 'secondary' }[] = []
 
         if (content.toLowerCase().includes('add') && content.toLowerCase().includes('transaction')) {
@@ -195,6 +258,18 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
         }
         if (content.toLowerCase().includes('add') && content.toLowerCase().includes('bill')) {
             buttons.push({ label: 'Add Bill', action: 'add-bill', variant: 'primary' })
+        }
+
+        // Check for crypto transfer commands in user input
+        if (userInput) {
+            const transferCommand = detectCryptoTransfer(userInput)
+            if (transferCommand) {
+                buttons.push({
+                    label: 'Execute Crypto Transfer',
+                    action: 'crypto-transfer',
+                    variant: 'primary'
+                })
+            }
         }
 
         return buttons
@@ -291,6 +366,27 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
         setMessages(newMessages)
         setIsLoading(true)
 
+        // Check if this is a crypto transfer command
+        const transferCommand = detectCryptoTransfer(content)
+
+        if (transferCommand) {
+            // Create transfer message with embedded UI
+            const transferMessageId = generateMessageId()
+            setMessages(prev => {
+                const assistantMessage: InternalChatMessage = {
+                    id: transferMessageId,
+                    content: `I detected a SUI transfer request: ${transferCommand.amount} ${transferCommand.currency} to ${transferCommand.toAddress.slice(0, 8)}...${transferCommand.toAddress.slice(-8)}`,
+                    role: 'assistant',
+                    timestamp: new Date(),
+                    transferData: { ...transferCommand, originalMessage: content },
+                    transferStatus: { status: 'idle', message: '' }
+                }
+                return [...prev, assistantMessage]
+            })
+            setIsLoading(false)
+            return
+        }
+
         // Prepare messages for API
         const apiMessages = [
             {
@@ -322,7 +418,7 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
                     role: 'assistant',
                     timestamp: new Date(),
                     suggestions: generateSuggestions(response),
-                    actionButtons: generateActionButtons(response)
+                    actionButtons: generateActionButtons(response, content)
                 }
                 return [...prev, assistantMessage]
             })
@@ -375,6 +471,355 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
         }
     }
 
+    // Copy to clipboard function
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text)
+            setCopied(true)
+            toast.success('Address copied to clipboard!')
+            setTimeout(() => setCopied(false), 2000)
+        } catch {
+            toast.error('Failed to copy address')
+        }
+    }
+
+    // Execute SUI transfer
+    const executeSuiTransfer = useCallback(async (command: TransferCommand, messageId: string) => {
+        if (!currentAccount) {
+            setMessages(prev => prev.map(msg =>
+                msg.id === messageId
+                    ? {
+                        ...msg,
+                        transferStatus: {
+                            status: 'error',
+                            message: 'Wallet not connected'
+                        }
+                    }
+                    : msg
+            ))
+            return
+        }
+
+        try {
+            // Update status to pending
+            setMessages(prev => prev.map(msg =>
+                msg.id === messageId
+                    ? {
+                        ...msg,
+                        transferStatus: {
+                            status: 'pending',
+                            message: 'Creating SUI transaction...'
+                        }
+                    }
+                    : msg
+            ))
+
+            // Convert SUI to MIST (1 SUI = 10^9 MIST)
+            const amountInMist = Math.floor(command.amount * 1_000_000_000)
+
+            // Create a new transaction
+            const transaction = new Transaction()
+
+            // Add transfer coins transaction
+            transaction.transferObjects([
+                transaction.splitCoins(transaction.gas, [amountInMist])
+            ], command.toAddress)
+
+            // Update status to wallet approval
+            setMessages(prev => prev.map(msg =>
+                msg.id === messageId
+                    ? {
+                        ...msg,
+                        transferStatus: {
+                            status: 'pending',
+                            message: 'Please approve the transaction in your Slush wallet...'
+                        }
+                    }
+                    : msg
+            ))
+
+            // Sign and execute transaction using the hook
+            signAndExecuteTransaction(
+                {
+                    transaction,
+                    chain: 'sui:testnet',
+                },
+                {
+                    onSuccess: (result) => {
+                        setMessages(prev => prev.map(msg =>
+                            msg.id === messageId
+                                ? {
+                                    ...msg,
+                                    transferStatus: {
+                                        status: 'success',
+                                        message: `Transfer successful! Transaction: ${result.digest}`,
+                                        signature: result.digest
+                                    }
+                                }
+                                : msg
+                        ))
+                        toast.success('SUI transfer completed successfully!')
+
+                        // Add natural follow-up message
+                        setTimeout(() => {
+                            setMessages(prev => [...prev, {
+                                id: generateMessageId(),
+                                content: `🎉 Great! Your ${command.amount} SUI transfer has been completed successfully. The funds should now be available in the recipient's wallet.\n\nThe transaction has been recorded on the Sui blockchain and you can view it on the explorer anytime. Is there anything else I can help you with today?`,
+                                role: 'assistant',
+                                timestamp: new Date(),
+                                suggestions: ['Check my balance', 'Send another transfer', 'View transaction history']
+                            }])
+                        }, 1000)
+                    },
+                    onError: (error) => {
+                        console.error('Transfer failed:', error)
+                        const errorMessage = error instanceof Error ? error.message : 'Transfer failed. Please try again.'
+                        setMessages(prev => prev.map(msg =>
+                            msg.id === messageId
+                                ? {
+                                    ...msg,
+                                    transferStatus: {
+                                        status: 'error',
+                                        message: errorMessage
+                                    }
+                                }
+                                : msg
+                        ))
+                        toast.error('Transfer failed: ' + errorMessage)
+                    }
+                }
+            )
+
+        } catch (error) {
+            console.error('Transfer failed:', error)
+            const errorMessage = error instanceof Error ? error.message : 'Transfer failed. Please try again.'
+            setMessages(prev => prev.map(msg =>
+                msg.id === messageId
+                    ? {
+                        ...msg,
+                        transferStatus: {
+                            status: 'error',
+                            message: errorMessage
+                        }
+                    }
+                    : msg
+            ))
+            toast.error('Transfer failed: ' + errorMessage)
+        }
+    }, [currentAccount, signAndExecuteTransaction])
+
+    // Transfer UI Component to be embedded in messages
+    const TransferUI = ({ message }: { message: InternalChatMessage }) => {
+        if (!message.transferData) return null
+
+        const { transferData, transferStatus } = message
+        const isConnected = !!currentAccount
+
+        return (
+            <div className='mt-4 px-16 py-8'>
+                {/* Main Transfer Card */}
+                <div className='bg-background hover:shadow-2xl shadow-emerald-800/20 transition-shadow duration-300 rounded-3xl border border-emerald-200/50 overflow-hidden'>
+                    {/* Header */}
+                    <div className='bg-gradient-to-r from-emerald-400/80 to-emerald-400/80 p-4'>
+                        <h4 className='font-semibold text-emerald-900 flex items-center gap-2'>
+                            <Coins className='h-5 w-5' />
+                            SUI Transfer Details
+                        </h4>
+                    </div>
+
+                    <div className='p-6 space-y-6'>
+                        {/* Transfer Amount Section */}
+                        <div className='bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 rounded-3xl border border-emerald-200'>
+                            <div className='flex items-center justify-between'>
+                                <div>
+                                    <p className='text-sm text-emerald-700 font-medium'>Transfer Amount</p>
+                                    <p className='text-3xl font-bold text-emerald-900 mt-1'>
+                                        {transferData.amount} {transferData.currency}
+                                    </p>
+                                </div>
+                                <div className='w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center'>
+                                    <Send className='h-6 w-6 text-white' />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Recipient Address */}
+                        <div className='space-y-3'>
+                            <label className='text-sm font-semibold text-gray-700'>Recipient Address</label>
+                            <div className='bg-card p-4 rounded-2xl border border-gray-200 hover:border-emerald-300 transition-colors'>
+                                <div className='flex items-center justify-between gap-3'>
+                                    <span className='font-mono text-sm text-gray-600 break-all flex-1'>
+                                        {transferData.toAddress}
+                                    </span>
+                                    <button
+                                        onClick={() => copyToClipboard(transferData.toAddress)}
+                                        className='p-2 hover:bg-emerald-50 rounded-xl transition-colors group'
+                                        title='Copy address'
+                                    >
+                                        {copied ?
+                                            <CheckCircle className='h-4 w-4 text-emerald-600' /> :
+                                            <Copy className='h-4 w-4 text-gray-500 group-hover:text-emerald-600' />
+                                        }
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Wallet Connection Status */}
+                        <div className='space-y-3'>
+                            <label className='text-sm font-semibold text-gray-700 flex items-center gap-2'>
+                                <Wallet className='h-4 w-4' />
+                                Slush Wallet Status
+                            </label>
+                            {isConnected ? (
+                                <div className='bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-2xl border border-green-200'>
+                                    <div className='flex items-center justify-between'>
+                                        <div className='flex items-center gap-3'>
+                                            <div className='w-8 h-8 bg-green-500 rounded-full flex items-center justify-center'>
+                                                <CheckCircle className='h-5 w-5 text-white' />
+                                            </div>
+                                            <div>
+                                                <p className='font-semibold text-green-800'>Connected</p>
+                                                <p className='text-xs text-green-600 font-mono'>
+                                                    {currentAccount?.address.slice(0, 12)}...{currentAccount?.address.slice(-8)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className='bg-card p-4 rounded-2xl '>
+                                    <div className='flex items-center gap-3 mb-3'>
+                                        <div className='w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center'>
+                                            <AlertCircle className='h-5 w-5 text-white' />
+                                        </div>
+                                        <div>
+                                            <p className='font-semibold text-gray-700'>Not Connected</p>
+                                            <p className='text-xs text-gray-500'>Connect your wallet to proceed</p>
+                                        </div>
+                                    </div>
+                                    <div className='[&>button]:w-full [&>button]:py-3 [&>button]:rounded-2xl [&>button]:font-semibold [&>button]:text-emerald-900 rounded-3xl w-full'>
+                                        <ConnectButton />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Transfer Action Button */}
+                        <button
+                            onClick={() => executeSuiTransfer(transferData, message.id)}
+                            disabled={!isConnected || transferStatus?.status === 'pending'}
+                            className={cn(
+                                'w-full py-4 px-6 rounded-2xl font-semibold transition-all duration-200 flex items-center justify-center gap-2',
+                                (!isConnected || transferStatus?.status === 'pending')
+                                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                    : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-500 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]'
+                            )}
+                        >
+                            {transferStatus?.status === 'pending' ? (
+                                <>
+                                    <div className='w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+                                    Processing Transfer...
+                                </>
+                            ) : !isConnected ? (
+                                <>
+                                    <Wallet className='h-5 w-5' />
+                                    Connect Wallet to Transfer
+                                </>
+                            ) : (
+                                <>
+                                    <Send className='h-5 w-5' />
+                                    Execute {transferData.amount} {transferData.currency} Transfer
+                                </>
+                            )}
+                        </button>
+
+                        {/* Transfer Status */}
+                        {transferStatus && transferStatus.status && transferStatus.status !== 'idle' && (
+                            <div className={cn(
+                                'p-4 rounded-2xl border-2',
+                                transferStatus.status === 'success' && 'bg-green-50 border-green-200',
+                                transferStatus.status === 'error' && 'bg-red-50 border-red-200',
+                                transferStatus.status === 'pending' && 'bg-blue-50 border-blue-200'
+                            )}>
+                                <div className='flex items-start gap-3'>
+                                    <div className='flex-shrink-0 mt-0.5'>
+                                        {transferStatus.status === 'success' ? (
+                                            <div className='w-8 h-8 bg-green-500 rounded-full flex items-center justify-center'>
+                                                <CheckCircle className='h-5 w-5 text-white' />
+                                            </div>
+                                        ) : transferStatus.status === 'error' ? (
+                                            <div className='w-8 h-8 bg-red-500 rounded-full flex items-center justify-center'>
+                                                <AlertCircle className='h-5 w-5 text-white' />
+                                            </div>
+                                        ) : (
+                                            <div className='w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center'>
+                                                <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin' />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className='flex-1'>
+                                        <p className={cn(
+                                            'font-semibold',
+                                            transferStatus.status === 'success' && 'text-green-800',
+                                            transferStatus.status === 'error' && 'text-red-800',
+                                            transferStatus.status === 'pending' && 'text-blue-800'
+                                        )}>
+                                            {transferStatus.status === 'success' && 'Transfer Completed!'}
+                                            {transferStatus.status === 'error' && 'Transfer Failed'}
+                                            {transferStatus.status === 'pending' && 'Processing...'}
+                                        </p>
+                                        <p className={cn(
+                                            'text-sm mt-1',
+                                            transferStatus.status === 'success' && 'text-green-700',
+                                            transferStatus.status === 'error' && 'text-red-700',
+                                            transferStatus.status === 'pending' && 'text-blue-700'
+                                        )}>
+                                            {transferStatus.message}
+                                        </p>
+                                        {transferStatus.signature && (
+                                            <div className='mt-3 p-3 bg-white rounded-xl border border-green-200'>
+                                                <p className='text-xs text-green-600 font-medium mb-2'>Transaction Hash</p>
+                                                <div className='flex items-center justify-between gap-2'>
+                                                    <span className='font-mono text-xs text-green-700 break-all'>
+                                                        {transferStatus.signature}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => copyToClipboard(transferStatus.signature!)}
+                                                        className='p-1 hover:bg-green-50 rounded'
+                                                    >
+                                                        <Copy className='h-3 w-3 text-green-600' />
+                                                    </button>
+                                                </div>
+                                                <a
+                                                    href={`https://testnet.suivision.xyz/txblock/${transferStatus.signature}`}
+                                                    target='_blank'
+                                                    rel='noopener noreferrer'
+                                                    className='inline-flex items-center gap-1 mt-2 text-green-600 hover:text-green-800 text-sm font-medium transition-colors'
+                                                >
+                                                    <ExternalLink className='h-4 w-4' />
+                                                    View on Sui Explorer
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className='bg-emerald-300 dark:bg-emerald-900 p-3'>
+                        <div className='flex items-center justify-center gap-2 text-xs text-emerald-900 dark:text-emerald-300'>
+                            <div className='w-2 h-2 bg-emerald-500 rounded-full animate-pulse'></div>
+                            Running on Sui Testnet
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <motion.div
             variants={containerVariants}
@@ -401,6 +846,7 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
                             {[
                                 'Help me create a budget',
                                 'Track my expenses',
+                                'Send SUI to someone',
                                 'Set savings goals',
                                 'Add a bill reminder'
                             ].map((prompt) => (
@@ -417,19 +863,21 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
                 )}
 
                 {messages.map((message) => (
-                    <Message
-                        key={message.id}
-                        id={message.id}
-                        content={message.content}
-                        role={message.role}
-                        timestamp={message.timestamp}
-                        user={user}
-                        isLoading={message.isLoading}
-                        suggestions={message.suggestions}
-                        actionButtons={message.actionButtons}
-                        onSuggestionClick={handleSuggestionClick}
-                        onActionClick={handleActionClick}
-                    />
+                    <div key={message.id}>
+                        <Message
+                            id={message.id}
+                            content={message.content}
+                            role={message.role}
+                            timestamp={message.timestamp}
+                            user={user}
+                            isLoading={message.isLoading}
+                            suggestions={message.suggestions}
+                            actionButtons={message.actionButtons}
+                            onSuggestionClick={handleSuggestionClick}
+                            onActionClick={handleActionClick}
+                        />
+                        {message.transferData && <TransferUI message={message} />}
+                    </div>
                 ))}
 
                 {/* Show loading animation when waiting for response */}

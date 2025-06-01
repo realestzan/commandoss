@@ -51,6 +51,12 @@ const FEATURES = [
         prompt: 'Help me set up savings goals and track my progress toward them'
     },
     {
+        id: 'crypto-transfer',
+        name: 'SUI Crypto Transfer',
+        description: 'Send SUI cryptocurrency using natural language',
+        prompt: 'I want to send SUI to someone using natural language commands'
+    },
+    {
         id: 'smart-insights',
         name: 'Smart Insights',
         description: 'Get spending trends and saving suggestions',
