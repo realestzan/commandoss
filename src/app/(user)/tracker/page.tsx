@@ -1,15 +1,15 @@
 'use client'
 
+import TrackerLoading from '@/app/(user)/tracker/loading'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/hooks/use-auth'
 import { db } from '@/lib/firebase'
-import { BankAccount, BillReminder, Budget, ChatInsight, ExpenseCategory, RecurringItem, Transaction } from '@/lib/types'
+import { BankAccount, BillReminder, Budget, ExpenseCategory, RecurringItem, Transaction } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { collection, getDocs, orderBy, query, where } from 'firebase/firestore'
 import { motion } from 'framer-motion'
@@ -37,32 +37,8 @@ interface FinancialData {
     budgets: Budget[]
     billReminders: BillReminder[]
     recurringItems: RecurringItem[]
-    chatInsights: ChatInsight[]
     bankAccounts: BankAccount[]
 }
-
-const LoadingSkeleton = () => (
-    <div className='space-y-6'>
-        {[...Array(4)].map((_, i) => (
-            <Card key={i} className='p-6'>
-                <div className='flex items-center justify-between mb-4'>
-                    <div className='flex items-center gap-3'>
-                        <Skeleton className='h-10 w-10 rounded-full' />
-                        <div className='space-y-2'>
-                            <Skeleton className='h-4 w-32' />
-                            <Skeleton className='h-3 w-20' />
-                        </div>
-                    </div>
-                    <Skeleton className='h-6 w-16' />
-                </div>
-                <div className='space-y-2'>
-                    <Skeleton className='h-3 w-full' />
-                    <Skeleton className='h-3 w-2/3' />
-                </div>
-            </Card>
-        ))}
-    </div>
-)
 
 export default function TrackerPage() {
     const { user, loading, isAuthenticated } = useAuth()
@@ -74,7 +50,6 @@ export default function TrackerPage() {
         budgets: [],
         billReminders: [],
         recurringItems: [],
-        chatInsights: [],
         bankAccounts: []
     })
     const [isLoading, setIsLoading] = useState(true)
@@ -118,8 +93,7 @@ export default function TrackerPage() {
                 budgets,
                 billReminders,
                 recurringItems,
-                bankAccounts,
-                chatInsights: [] // We can implement this later if needed
+                bankAccounts
             })
         } catch (error) {
             console.error('Error fetching financial data:', error)
@@ -316,7 +290,7 @@ export default function TrackerPage() {
             </div>
 
             {isLoading ? (
-                <LoadingSkeleton />
+                <TrackerLoading />
             ) : (
                 <>
                     {/* Summary Cards */}

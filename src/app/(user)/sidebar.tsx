@@ -85,17 +85,19 @@ export default function Sidebar({ user }: { user?: User }) {
                 animate="visible"
                 className='w-64 bg-card p-4 py-6 my-4 ml-4 rounded-3xl flex flex-col justify-between '
             >
-                {/* Logo */}
-                <motion.div variants={itemVariants} className='flex items-center gap-2 mb-8'>
-                    <motion.div
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        whileTap={{ scale: 0.95 }}
-                        className='w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md'
-                    >
-                        <div className='w-4 h-4 bg-white rounded-full'></div>
+                <Link href='/'>
+                    {/* Logo */}
+                    <motion.div variants={itemVariants} className='flex items-center gap-2 mb-8'>
+                        <motion.div
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                            whileTap={{ scale: 0.95 }}
+                            className='w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md'
+                        >
+                            <div className='w-4 h-4 bg-white rounded-full'></div>
+                        </motion.div>
+                        <span className='text-xl font-semibold text-gray-900 dark:text-gray-100'>Commandoss</span>
                     </motion.div>
-                    <span className='text-xl font-semibold text-gray-900 dark:text-gray-100'>Diary</span>
-                </motion.div>
+                </Link>
 
                 {/* Menu */}
                 <div className='space-y-1 mb-8'>
@@ -162,15 +164,17 @@ export default function Sidebar({ user }: { user?: User }) {
                         </Button>
                     </motion.div>
                     <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                        <Button variant='ghost' className='w-full p-6 pl-4 justify-start gap-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-gray-700 dark:text-gray-300 hover:text-emerald-700 dark:hover:text-emerald-400 rounded-xl transition-all duration-300'>
-                            <motion.div
-                                whileHover={{ rotate: 5 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                <HelpCircle strokeWidth={1.5} className='w-5 h-5' />
-                            </motion.div>
-                            Help
-                        </Button>
+                        <Link href='/faq'>
+                            <Button variant='ghost' className='w-full p-6 pl-4 justify-start gap-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 text-gray-700 dark:text-gray-300 hover:text-emerald-700 dark:hover:text-emerald-400 rounded-xl transition-all duration-300'>
+                                <motion.div
+                                    whileHover={{ rotate: 5 }}
+                                    transition={{ duration: 0.2 }}
+                                >
+                                    <HelpCircle strokeWidth={1.5} className='w-5 h-5' />
+                                </motion.div>
+                                Help
+                            </Button>
+                        </Link>
                     </motion.div>
                     <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                         <Button

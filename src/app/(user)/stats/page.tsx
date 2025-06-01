@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/hooks/use-auth'
 import { db } from '@/lib/firebase'
 import { BankAccount, BillReminder, Budget, ExpenseCategory, RecurringItem, Transaction } from '@/lib/types'
@@ -72,6 +73,154 @@ interface FinancialStats {
         }>
     }
 }
+
+const StatsLoadingSkeleton = () => (
+    <main className='flex-1 space-y-6 rounded-3xl'>
+        {/* Page Title Skeleton */}
+        <div className='flex items-center justify-between'>
+            <div>
+                <Skeleton className='h-9 w-64 mb-2' />
+                <Skeleton className='h-5 w-96' />
+            </div>
+            <div className='flex gap-2'>
+                <Skeleton className='h-10 w-32' />
+                <Skeleton className='h-10 w-28' />
+            </div>
+        </div>
+
+        {/* Key Metrics Cards Skeleton */}
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
+            {/* Total Balance Card */}
+            <div className='bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-xl rounded-3xl p-6'>
+                <div className='flex items-center justify-between'>
+                    <div className='space-y-3'>
+                        <Skeleton className='h-4 w-24 bg-emerald-400' />
+                        <Skeleton className='h-10 w-32 bg-emerald-400' />
+                        <div className='flex items-center gap-1'>
+                            <Skeleton className='h-3 w-3 bg-emerald-400' />
+                            <Skeleton className='h-3 w-20 bg-emerald-400' />
+                        </div>
+                    </div>
+                    <Skeleton className='h-8 w-8 bg-emerald-400' />
+                </div>
+            </div>
+
+            {/* Other Metric Cards */}
+            {[...Array(3)].map((_, i) => (
+                <div key={i} className='bg-background hover:shadow-2xl shadow-emerald-800/20 transition-shadow duration-300 rounded-3xl p-6'>
+                    <div className='flex items-center justify-between'>
+                        <div className='space-y-3'>
+                            <Skeleton className='h-4 w-28' />
+                            <Skeleton className='h-10 w-36' />
+                            <div className='flex items-center gap-1'>
+                                <Skeleton className='h-3 w-3' />
+                                <Skeleton className='h-3 w-20' />
+                            </div>
+                        </div>
+                        <Skeleton className='h-8 w-8' />
+                    </div>
+                </div>
+            ))}
+        </div>
+
+        {/* Bento Grid Layout Skeleton */}
+        <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+            {/* Monthly Trend Chart Skeleton */}
+            <Card className='lg:col-span-2 bg-background hover:shadow-2xl shadow-emerald-800/20 transition-shadow duration-300 rounded-3xl'>
+                <CardHeader>
+                    <div className='flex items-center justify-between'>
+                        <Skeleton className='h-6 w-48' />
+                        <Skeleton className='h-5 w-5' />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className='h-80'>
+                        <Skeleton className='h-full w-full' />
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Category Spending Skeleton */}
+            <Card className='lg:col-span-1 bg-background hover:shadow-2xl shadow-emerald-800/20 transition-shadow duration-300 rounded-3xl'>
+                <CardHeader>
+                    <div className='flex items-center justify-between'>
+                        <Skeleton className='h-6 w-36' />
+                        <Skeleton className='h-5 w-5' />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className='h-64 mb-4'>
+                        <Skeleton className='h-full w-full rounded-full' />
+                    </div>
+                    <div className='space-y-2'>
+                        {[...Array(3)].map((_, i) => (
+                            <div key={i} className='flex items-center justify-between text-sm'>
+                                <div className='flex items-center gap-2'>
+                                    <Skeleton className='w-3 h-3 rounded-full' />
+                                    <Skeleton className='h-4 w-16' />
+                                </div>
+                                <Skeleton className='h-4 w-12' />
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+
+        {/* Bottom Row Skeleton */}
+        <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+            {/* Recent Transactions Skeleton */}
+            <Card className='lg:col-span-2 bg-background hover:shadow-2xl shadow-emerald-800/20 transition-shadow duration-300 rounded-3xl'>
+                <CardHeader className='flex flex-row items-center justify-between'>
+                    <Skeleton className='h-6 w-40' />
+                    <Skeleton className='h-8 w-20' />
+                </CardHeader>
+                <CardContent>
+                    <div className='space-y-4'>
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} className='flex items-center gap-4 p-3 rounded-3xl bg-card'>
+                                <Skeleton className='w-2 h-2 rounded-full' />
+                                <div className='flex-1 space-y-2'>
+                                    <Skeleton className='h-4 w-32' />
+                                    <div className='flex items-center gap-2'>
+                                        <Skeleton className='h-3 w-20' />
+                                        <span className='text-muted-foreground'>•</span>
+                                        <Skeleton className='h-3 w-16' />
+                                    </div>
+                                </div>
+                                <Skeleton className='h-6 w-16 rounded-full' />
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Financial Insights Skeleton */}
+            <div className='bg-gradient-to-br from-emerald-800 to-emerald-900 text-white border-0 shadow-xl rounded-3xl p-6'>
+                <div className='flex items-center gap-2 mb-6'>
+                    <Skeleton className='w-5 h-5 bg-emerald-600' />
+                    <Skeleton className='h-6 w-32 bg-emerald-600' />
+                </div>
+
+                <div className='space-y-4'>
+                    <div className='text-center'>
+                        <Skeleton className='h-9 w-24 mx-auto mb-2 bg-emerald-600' />
+                        <Skeleton className='h-4 w-20 mx-auto mb-4 bg-emerald-600' />
+                    </div>
+
+                    <div className='space-y-3'>
+                        {[...Array(4)].map((_, i) => (
+                            <div key={i} className='flex items-center justify-between'>
+                                <Skeleton className='h-4 w-32 bg-emerald-600' />
+                                <Skeleton className='h-5 w-12 bg-emerald-600' />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+)
 
 export default function StatsPage() {
     const { user, loading, isAuthenticated } = useAuth()
@@ -392,13 +541,7 @@ export default function StatsPage() {
             </div>
 
             {isLoading ? (
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6'>
-                    {[...Array(4)].map((_, i) => (
-                        <Card key={i} className='p-6 animate-pulse'>
-                            <div className='h-20 bg-muted rounded'></div>
-                        </Card>
-                    ))}
-                </div>
+                <StatsLoadingSkeleton />
             ) : (
                 <>
                     {/* Key Metrics Cards */}
@@ -623,8 +766,8 @@ export default function StatsPage() {
                                                 </div>
                                                 <div>
                                                     <Badge variant='outline' className={`${transaction.type === 'income'
-                                                            ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                                                            : 'bg-red-50 text-red-600 border-red-200'
+                                                        ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                                                        : 'bg-red-50 text-red-600 border-red-200'
                                                         }`}>
                                                         {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
                                                     </Badge>

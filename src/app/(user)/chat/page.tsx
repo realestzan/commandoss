@@ -1,8 +1,9 @@
 'use client'
 
+import ChatHistory, { ChatHistoryRef } from '@/app/(user)/chat/history'
 import { useAuth } from '@/hooks/use-auth'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Chat } from './chat'
 import ChatIntro from './intro'
 
@@ -11,11 +12,8 @@ export default function ChatPage() {
     const router = useRouter()
     const [showChat, setShowChat] = useState(false)
     const [initialInputValue, setInitialInputValue] = useState<string>()
-    const [mounted, setMounted] = useState(false)
-
-    useEffect(() => {
-        setMounted(true)
-    }, [])
+    const [selectedConversationId, setSelectedConversationId] = useState<string>()
+    const chatHistoryRef = useRef<ChatHistoryRef>(null)
 
     useEffect(() => {
         if (!loading && !isAuthenticated) {
@@ -25,29 +23,30 @@ export default function ChatPage() {
 
     const handlePromptSelect = (prompt: string) => {
         setInitialInputValue(prompt)
+        setSelectedConversationId(undefined)
+        setShowChat(true)
+    }
+
+    const handleConversationSelect = (conversationId: string) => {
+        setSelectedConversationId(conversationId)
+        setInitialInputValue(undefined)
         setShowChat(true)
     }
 
     const handleBackToIntro = () => {
         setShowChat(false)
         setInitialInputValue(undefined)
+        setSelectedConversationId(undefined)
     }
 
-    // Prevent hydration mismatch
-    if (!mounted) {
-        return (
-            <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
-            </div>
-        )
+    const handleConversationSaved = () => {
+        chatHistoryRef.current?.refreshConversations()
     }
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
-            </div>
-        )
+    const handleConversationDeleted = (deletedConversationId: string) => {
+        if (selectedConversationId === deletedConversationId) {
+            handleBackToIntro()
+        }
     }
 
     if (!user) {
@@ -57,8 +56,13 @@ export default function ChatPage() {
     return (
         <main className="flex-1 h-full flex flex-col">
             {!showChat ? (
-                <div className="flex-1 p-6 overflow-y-auto">
+                <div className="flex-1 flex gap-12 overflow-y-auto ">
                     <ChatIntro user={user} onPromptSelect={handlePromptSelect} />
+                    <ChatHistory
+                        ref={chatHistoryRef}
+                        onConversationSelect={handleConversationSelect}
+                        onConversationDelete={handleConversationDeleted}
+                    />
                 </div>
             ) : (
                 <div className="flex-1 flex flex-col">
@@ -75,7 +79,9 @@ export default function ChatPage() {
                             </button>
                             <div>
                                 <h1 className="text-lg font-semibold">Financial Assistant</h1>
-                                <p className="text-sm text-muted-foreground">AI-powered finance help</p>
+                                <p className="text-sm text-muted-foreground">
+                                    {selectedConversationId ? 'Continue conversation' : 'AI-powered finance help'}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -84,6 +90,8 @@ export default function ChatPage() {
                     <Chat
                         user={user}
                         initialInputValue={initialInputValue}
+                        conversationId={selectedConversationId}
+                        onConversationSaved={handleConversationSaved}
                         className="flex-1"
                     />
                 </div>

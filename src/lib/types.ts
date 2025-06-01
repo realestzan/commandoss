@@ -89,11 +89,24 @@ export type RecurringItem = {
     nextDueDate: string;
 }
 
-export type ChatInsight = {
-    id: string;
-    userId: string;
-    type: "warning" | "suggestion" | "info";
-    message: string;
-    generatedAt: string;
-    relatedTransactionId?: string;
+export type ChatMessage = {
+    id: string
+    content: string
+    role: 'user' | 'assistant'
+    timestamp: string
+    suggestions?: string[]
+    actionButtons?: {
+        label: string
+        action: string
+        variant?: 'primary' | 'secondary'
+    }[]
+}
+
+export type ChatConversation = {
+    id: string
+    userId: string
+    title: string
+    messages: ChatMessage[]
+    createdAt: string
+    updatedAt: string
 }

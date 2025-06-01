@@ -16,7 +16,7 @@ export type User = {
 
 and can perform some action when user chat with the bot such as: 
 - create Budget
-- add BillReminder
+- add BillReminder  
 - give ChatInsight
 - add Transaction
 - create FinancialGoal

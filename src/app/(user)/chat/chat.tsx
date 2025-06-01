@@ -1,25 +1,18 @@
 'use client'
 
-import { User } from '@/lib/types'
+import { ChatService } from '@/lib/chat-service'
+import { ChatMessage, User } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { motion, Variants } from 'framer-motion'
-import { Bot } from 'lucide-react'
+import { Bot, ChevronUp, Save } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ManualEntry from '../tracker/manual'
 import { ChatInput } from './input'
 import { Message } from './message'
 
-interface ChatMessage {
-    id: string
-    content: string
-    role: 'user' | 'assistant'
+// Internal message type with Date timestamp and loading state
+interface InternalChatMessage extends Omit<ChatMessage, 'timestamp'> {
     timestamp: Date
-    suggestions?: string[]
-    actionButtons?: {
-        label: string
-        action: string
-        variant?: 'primary' | 'secondary'
-    }[]
     isLoading?: boolean
 }
 
@@ -27,6 +20,8 @@ interface ChatProps {
     user: User
     initialInputValue?: string
     className?: string
+    conversationId?: string
+    onConversationSaved?: () => void
 }
 
 const containerVariants: Variants = {
@@ -80,12 +75,16 @@ If a user wants to add any financial data, offer action buttons to help them do 
 
 Keep responses concise and actionable. Always be encouraging about their financial journey.`
 
-export function Chat({ user, initialInputValue, className }: ChatProps) {
-    const [messages, setMessages] = useState<ChatMessage[]>([])
+export function Chat({ user, initialInputValue, className, conversationId, onConversationSaved }: ChatProps) {
+    const [messages, setMessages] = useState<InternalChatMessage[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [isManualEntryOpen, setIsManualEntryOpen] = useState(false)
     const [manualEntryType, setManualEntryType] = useState<'transaction' | 'budget' | 'bill-reminder' | 'bank-account' | 'recurring-item' | undefined>()
+    const [currentConversationId, setCurrentConversationId] = useState<string | null>(conversationId || null)
+    const [isSaving, setIsSaving] = useState(false)
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    const chatContainerRef = useRef<HTMLDivElement>(null)
     const messageIdCounter = useRef(0)
     const initialInputProcessed = useRef(false)
 
@@ -99,9 +98,20 @@ export function Chat({ user, initialInputValue, className }: ChatProps) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
 
+    const scrollToTop = () => {
+        chatContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
     useEffect(() => {
         scrollToBottom()
     }, [messages])
+
+    // Mark as having unsaved changes when messages change
+    useEffect(() => {
+        if (messages.length > 0 && !isLoading) {
+            setHasUnsavedChanges(true)
+        }
+    }, [messages, isLoading])
 
     const callGroqAPI = async (messages: { role: string; content: string }[], retryCount = 0) => {
         try {
@@ -191,19 +201,99 @@ export function Chat({ user, initialInputValue, className }: ChatProps) {
         return buttons
     }
 
+    // Convert internal ChatMessage to Firebase ChatMessage
+    const convertToFirebaseMessage = (msg: InternalChatMessage): ChatMessage => ({
+        id: msg.id,
+        content: msg.content,
+        role: msg.role,
+        timestamp: msg.timestamp.toISOString(),
+        suggestions: msg.suggestions,
+        actionButtons: msg.actionButtons
+    })
+
+    // Manual save function for the floating button
+    const handleManualSave = async () => {
+        if (messages.length === 0) return
+
+        try {
+            setIsSaving(true)
+            const firebaseMessages = messages
+                .filter(msg => !msg.isLoading) // Don't save loading messages
+                .map(convertToFirebaseMessage)
+
+            if (firebaseMessages.length === 0) return
+
+            if (currentConversationId) {
+                // Update existing conversation
+                await ChatService.updateConversation(currentConversationId, firebaseMessages)
+            } else {
+                // Create new conversation
+                const newConversationId = await ChatService.saveConversation(user.id, firebaseMessages)
+                setCurrentConversationId(newConversationId)
+            }
+
+            setHasUnsavedChanges(false)
+            onConversationSaved?.()
+        } catch (error) {
+            console.error('Failed to save conversation:', error)
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    // Load existing conversation
+    useEffect(() => {
+        const loadConversation = async () => {
+            if (conversationId) {
+                // Clear messages first when loading a different conversation
+                if (conversationId !== currentConversationId) {
+                    setMessages([])
+                    setHasUnsavedChanges(false)
+                }
+
+                try {
+                    const conversation = await ChatService.getConversation(conversationId)
+                    if (conversation) {
+                        const loadedMessages: InternalChatMessage[] = conversation.messages.map(msg => ({
+                            ...msg,
+                            timestamp: new Date(msg.timestamp)
+                        }))
+                        setMessages(loadedMessages)
+                        setCurrentConversationId(conversationId)
+                        setHasUnsavedChanges(false) // Loaded messages are already saved
+
+                        // Reset the initial input processing flag for loaded conversations
+                        initialInputProcessed.current = true
+                    }
+                } catch (error) {
+                    console.error('Failed to load conversation:', error)
+                }
+            } else if (conversationId === undefined && currentConversationId !== null) {
+                // Clear conversation when no conversationId (new chat)
+                setMessages([])
+                setCurrentConversationId(null)
+                setHasUnsavedChanges(false)
+                initialInputProcessed.current = false
+            }
+        }
+
+        loadConversation()
+    }, [conversationId]) // Remove currentConversationId from dependencies to avoid conflicts
+
     const handleUserMessage = useCallback(async (content: string) => {
-        const userMessage: ChatMessage = {
+        const userMessage: InternalChatMessage = {
             id: generateMessageId(),
             content,
             role: 'user',
             timestamp: new Date()
         }
 
-        setMessages(prev => [...prev, userMessage])
+        const newMessages = [...messages, userMessage]
+        setMessages(newMessages)
         setIsLoading(true)
 
         // Add loading message
-        const loadingMessage: ChatMessage = {
+        const loadingMessage: InternalChatMessage = {
             id: generateMessageId(),
             content: '',
             role: 'assistant',
@@ -239,7 +329,7 @@ export function Chat({ user, initialInputValue, className }: ChatProps) {
             // Remove loading message and add actual response
             setMessages(prev => {
                 const withoutLoading = prev.filter(msg => !msg.isLoading)
-                const assistantMessage: ChatMessage = {
+                const assistantMessage: InternalChatMessage = {
                     id: generateMessageId(),
                     content: response,
                     role: 'assistant',
@@ -253,9 +343,9 @@ export function Chat({ user, initialInputValue, className }: ChatProps) {
             // Remove loading message and add error message
             setMessages(prev => {
                 const withoutLoading = prev.filter(msg => !msg.isLoading)
-                const errorMessage: ChatMessage = {
+                const errorMessage: InternalChatMessage = {
                     id: generateMessageId(),
-                    content: "I&apos;m sorry, I encountered an error. Please try again.",
+                    content: "I'm sorry, I encountered an error. Please try again.",
                     role: 'assistant',
                     timestamp: new Date()
                 }
@@ -264,7 +354,7 @@ export function Chat({ user, initialInputValue, className }: ChatProps) {
         }
 
         setIsLoading(false)
-    }, [user.name, user.preferredCurrency, user.monthlyIncome, user.financialGoals, messages])
+    }, [user.name, user.preferredCurrency, user.monthlyIncome, user.financialGoals, messages, user.id])
 
     // Process initial input value only once
     useEffect(() => {
@@ -306,13 +396,14 @@ export function Chat({ user, initialInputValue, className }: ChatProps) {
 
     const handleManualEntryComplete = () => {
         // Add a confirmation message
-        const confirmationMessage: ChatMessage = {
+        const confirmationMessage: InternalChatMessage = {
             id: generateMessageId(),
             content: "Great! I've helped you add that financial data. Is there anything else you'd like to track or manage?",
             role: 'assistant',
             timestamp: new Date(),
             suggestions: ['Add another transaction', 'View my budget', 'Set a new goal']
         }
+
         setMessages(prev => [...prev, confirmationMessage])
     }
 
@@ -321,10 +412,13 @@ export function Chat({ user, initialInputValue, className }: ChatProps) {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className={cn("flex flex-col h-full", className)}
+            className={cn("flex flex-col h-full relative", className)}
         >
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+            <div
+                ref={chatContainerRef}
+                className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
+            >
                 {messages.length === 0 && !initialInputValue && (
                     <motion.div variants={itemVariants} className="flex flex-col items-center justify-center h-full text-center">
                         <div className="w-16 h-16 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 flex items-center justify-center mb-4">
@@ -373,13 +467,56 @@ export function Chat({ user, initialInputValue, className }: ChatProps) {
             </div>
 
             {/* Chat Input */}
-            <div className="px-4">
+            <div className="px-4 pr-12">
                 <ChatInput
                     onSubmit={handleUserMessage}
                     isLoading={isLoading}
                     initialInputValue={initialInputValue}
                 />
             </div>
+
+            {/* Floating Action Buttons */}
+            {messages.length > 0 && (
+                <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-10">
+                    {/* Scroll to Top Button */}
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={scrollToTop}
+                        className="w-12 h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full shadow-lg flex items-center justify-center transition-colors"
+                        title="Scroll to top"
+                    >
+                        <ChevronUp className="w-5 h-5" />
+                    </motion.button>
+
+                    {/* Save Conversation Button */}
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={handleManualSave}
+                        disabled={isSaving || !hasUnsavedChanges}
+                        className={cn(
+                            "w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-colors",
+                            hasUnsavedChanges && !isSaving
+                                ? "bg-emerald-600 hover:bg-emerald-800 text-white"
+                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        )}
+                        title={
+                            isSaving
+                                ? "Saving..."
+                                : hasUnsavedChanges
+                                    ? "Save conversation"
+                                    : "No changes to save"
+                        }
+                    >
+                        <Save className={cn("w-5 h-5", isSaving && "animate-pulse")} />
+                    </motion.button>
+                </div>
+            )}
 
             {/* Manual Entry Modal */}
             <ManualEntry
