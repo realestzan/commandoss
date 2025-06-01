@@ -6,9 +6,10 @@ import { Card } from '@/components/ui/card'
 import { User } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import { Bot, CheckCircle2, Copy, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { Bot, CheckCircle2, Copy, ThumbsDown, ThumbsUp, Volume2, VolumeX } from 'lucide-react'
 import { useState } from 'react'
 import Markdown from 'react-markdown'
+import { toast } from 'sonner'
 
 interface MessageProps {
     id: string
@@ -40,6 +41,8 @@ export function Message({
 }: MessageProps) {
     const [copied, setCopied] = useState(false)
     const [feedback, setFeedback] = useState<'up' | 'down' | null>(null)
+    const [isSpeaking, setIsSpeaking] = useState(false)
+    const [isGeneratingAudio, setIsGeneratingAudio] = useState(false)
 
     const handleCopy = async () => {
         await navigator.clipboard.writeText(content)
@@ -51,6 +54,78 @@ export function Message({
         setFeedback(type)
         // Here you could send feedback to your analytics
         console.log(`Feedback for message ${id}: ${type}`)
+    }
+
+    const handleSpeak = async () => {
+        if (isSpeaking) {
+            // Stop current speech
+            window.speechSynthesis.cancel()
+            setIsSpeaking(false)
+            return
+        }
+
+        try {
+            setIsGeneratingAudio(true)
+
+            // Call ElevenLabs API
+            const response = await fetch('/api/tts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: content }),
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to generate speech')
+            }
+
+            const audioBlob = await response.blob()
+            const audioUrl = URL.createObjectURL(audioBlob)
+            const audio = new Audio(audioUrl)
+
+            setIsSpeaking(true)
+            setIsGeneratingAudio(false)
+
+            audio.onended = () => {
+                setIsSpeaking(false)
+                URL.revokeObjectURL(audioUrl)
+            }
+
+            audio.onerror = () => {
+                setIsSpeaking(false)
+                setIsGeneratingAudio(false)
+                URL.revokeObjectURL(audioUrl)
+                toast.error('Failed to play audio')
+            }
+
+            await audio.play()
+        } catch (error) {
+            console.error('TTS error:', error)
+            setIsGeneratingAudio(false)
+            setIsSpeaking(false)
+
+            // Fallback to browser TTS if ElevenLabs fails
+            try {
+                const utterance = new SpeechSynthesisUtterance(content)
+                utterance.rate = 0.9
+                utterance.pitch = 1.0
+                utterance.volume = 0.8
+
+                utterance.onstart = () => setIsSpeaking(true)
+                utterance.onend = () => setIsSpeaking(false)
+                utterance.onerror = () => {
+                    setIsSpeaking(false)
+                    toast.error('Speech synthesis failed')
+                }
+
+                window.speechSynthesis.speak(utterance)
+                toast.info('Using browser speech synthesis')
+            } catch (fallbackError) {
+                console.error('Fallback TTS error:', fallbackError)
+                toast.error('Text-to-speech not available')
+            }
+        }
     }
 
     if (role === 'user') {
@@ -154,6 +229,7 @@ export function Message({
                                         size="sm"
                                         onClick={handleCopy}
                                         className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                        title="Copy message"
                                     >
                                         {copied ? (
                                             <CheckCircle2 className="w-3 h-3" />
@@ -161,6 +237,28 @@ export function Message({
                                             <Copy className="w-3 h-3" />
                                         )}
                                     </Button>
+
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleSpeak}
+                                        disabled={isGeneratingAudio}
+                                        className={cn(
+                                            "h-6 px-2 text-xs hover:text-emerald-600",
+                                            isSpeaking ? 'text-emerald-600' : 'text-muted-foreground',
+                                            isGeneratingAudio && 'opacity-50 cursor-not-allowed'
+                                        )}
+                                        title={isSpeaking ? "Stop speaking" : "Read aloud"}
+                                    >
+                                        {isGeneratingAudio ? (
+                                            <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                                        ) : isSpeaking ? (
+                                            <VolumeX className="w-3 h-3" />
+                                        ) : (
+                                            <Volume2 className="w-3 h-3" />
+                                        )}
+                                    </Button>
+
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -169,6 +267,7 @@ export function Message({
                                             "h-6 px-2 text-xs hover:text-emerald-600",
                                             feedback === 'up' ? 'text-emerald-600' : 'text-muted-foreground'
                                         )}
+                                        title="Good response"
                                     >
                                         <ThumbsUp className="w-3 h-3" />
                                     </Button>
@@ -180,6 +279,7 @@ export function Message({
                                             "h-6 px-2 text-xs hover:text-red-600",
                                             feedback === 'down' ? 'text-red-600' : 'text-muted-foreground'
                                         )}
+                                        title="Poor response"
                                     >
                                         <ThumbsDown className="w-3 h-3" />
                                     </Button>

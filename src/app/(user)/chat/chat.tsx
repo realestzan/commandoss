@@ -1,13 +1,16 @@
 'use client'
 
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { AI_MODELS, detectCryptoTransfer } from '@/lib/chat'
 import { ChatService } from '@/lib/chat-service'
 import { ChatMessage, User } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { ConnectButton, useCurrentAccount, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 import { motion, Variants } from 'framer-motion'
-import { AlertCircle, Bot, CheckCircle, ChevronUp, Coins, Copy, ExternalLink, Save, Send, Wallet } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { AlertCircle, Bot, CheckCircle, ChevronUp, Coins, Copy, ExternalLink, Save, Send, Settings, Wallet } from 'lucide-react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { ChatInput } from './input'
 import { Message } from './message'
@@ -42,7 +45,12 @@ interface ChatProps {
     className?: string
     conversationId?: string
     onConversationSaved?: () => void
-    onActionClick?: (action: string) => void
+    onActionClick?: (action: string, conversationContext?: string) => void
+    onBackToIntro?: () => void
+}
+
+export interface ChatRef {
+    sendMessage: (message: string) => void
 }
 
 const containerVariants: Variants = {
@@ -68,7 +76,7 @@ const itemVariants: Variants = {
 }
 
 // System prompt for the financial assistant
-const SYSTEM_PROMPT = `You are a helpful personal finance assistant for a finance management app. 
+const SYSTEM_PROMPT = `You are a specialized personal finance assistant with advanced SUI cryptocurrency capabilities for a comprehensive finance management app.
 
 User Information:
 - Name: {userName}
@@ -76,40 +84,65 @@ User Information:
 - Monthly Income: {income}
 - Financial Goals: {goals}
 
-Your capabilities include:
-1. **Transaction Management**: Help users add income, expenses, and transfers
-2. **Budget Planning**: Create and manage budgets by category
-3. **Bill Reminders**: Set up and track bill payments
-4. **Financial Goals**: Create and track savings goals
-5. **Bank Accounts**: Add and manage bank accounts
-6. **Recurring Items**: Set up recurring income or bills
-7. **SUI Crypto Transfers**: Send SUI cryptocurrency using natural language commands with Slush wallet
-8. **Financial Insights**: Provide spending analysis and suggestions
+Your CORE capabilities include:
+1. **SUI Crypto Transfers** - PRIMARY FEATURE: Detect and execute SUI cryptocurrency transfers using natural language
+2. **Transaction Management**: Help users add income, expenses, and transfers with smart categorization
+3. **Budget Planning**: Create detailed budgets by category with spending limits and tracking
+4. **Bill Reminders**: Set up recurring bill payments and due date notifications
+5. **Financial Goals**: Create SMART savings goals with progress tracking and timelines
+6. **Bank Accounts**: Add and manage multiple bank accounts with balance tracking
+7. **Recurring Items**: Set up recurring income (salary, freelance) or bills (rent, utilities)
+8. **Financial Insights**: Provide detailed spending analysis, trends, and personalized recommendations
+9. **Debt Management**: Track debts, payment schedules, and payoff strategies
+10. **Financial Reports**: Generate comprehensive monthly/quarterly financial summaries
 
-When users ask for help with financial tasks, you should:
-- Provide helpful financial advice
-- Offer to help them add specific financial data
-- Give suggestions for better financial management
-- Be concise but informative
-- Use their name and currency preferences
+**CRITICAL: SUI Transfer Detection**
+When users mention any of these patterns, IMMEDIATELY recognize as SUI transfer requests:
+- "create a transfer [amount] SUI to [address]"
+- "send [amount] SUI to [address]"
+- "transfer [amount] SUI to my friend at [address]"
+- "pay [amount] SUI to [address]"
+- Any combination with: send, transfer, pay, create + SUI + address
 
-For SUI crypto transfers, users can say things like:
-- "send 0.2 SUI to [address] for me"
-- "transfer 5 SUI to [wallet address]"
-- "pay 0.1 SUI to [recipient]"
+**SUI Transfer Response Protocol:**
+1. ALWAYS confirm the transfer details first
+2. Validate the wallet address format
+3. Confirm the amount in SUI
+4. Ask about wallet connection status
+5. Provide clear next steps for execution
+6. NEVER suggest "Add Transaction" for SUI transfers - these are executed directly on blockchain
 
-When detecting SUI transfer requests, guide them to use the crypto transfer feature with Slush wallet.
+**Response Guidelines for SUI Transfers:**
+- Recognize SUI transfers immediately from natural language
+- Confirm amount, address, and readiness
+- Guide through wallet connection if needed
+- Explain the blockchain execution process
+- Provide security reminders about address verification
+- Use action buttons: "Execute SUI Transfer", "Review Transfer", "Cancel Transfer"
 
-If a user wants to add any financial data, offer action buttons to help them do so directly.
+For other financial tasks:
+- Provide actionable financial advice tailored to their situation
+- Offer specific action buttons for financial operations they mention
+- Give context-aware suggestions based on their income and goals
+- Be encouraging and positive about their financial journey
 
-Keep responses concise and actionable. Always be encouraging about their financial journey.`
+**Action Button Priorities:**
+1. SUI transfers → "Execute SUI Transfer" (primary)
+2. Other crypto → "Crypto Tools" 
+3. Regular transactions → "Add Transaction"
+4. Budgets → "Create Budget"
+5. Analysis → "Generate Report", "View Insights"
 
-export function Chat({ user, initialInputValue, className, conversationId, onConversationSaved, onActionClick }: ChatProps) {
+Always prioritize SUI transfer detection and provide crypto-specific guidance when detected.`
+
+export const Chat = forwardRef<ChatRef, ChatProps>(({ user, initialInputValue, className, conversationId, onConversationSaved, onActionClick, onBackToIntro }, ref) => {
     const [messages, setMessages] = useState<InternalChatMessage[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(conversationId || null)
     const [isSaving, setIsSaving] = useState(false)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+    const [selectedModel, setSelectedModel] = useState(AI_MODELS[0].id) // Default to Groq
+    const [showModelSelector, setShowModelSelector] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const chatContainerRef = useRef<HTMLDivElement>(null)
     const messageIdCounter = useRef(0)
@@ -145,9 +178,11 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
         }
     }, [messages, isLoading])
 
-    const callGroqAPI = async (messages: { role: string; content: string }[], retryCount = 0) => {
+    const callAI = async (messages: { role: string; content: string }[], retryCount = 0) => {
+        const model = AI_MODELS.find(m => m.id === selectedModel) || AI_MODELS[0]
+
         try {
-            const response = await fetch('/api/chat', {
+            const response = await fetch(model.endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -159,7 +194,8 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
                         currency: user.preferredCurrency,
                         income: user.monthlyIncome,
                         goals: user.financialGoals?.length || 0
-                    }
+                    },
+                    model: model.model
                 }),
             })
 
@@ -168,7 +204,7 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
                     // Retry with exponential backoff
                     const delay = Math.pow(2, retryCount) * 2000 // 2s, 4s, 8s
                     await new Promise(resolve => setTimeout(resolve, delay))
-                    return callGroqAPI(messages, retryCount + 1)
+                    return callAI(messages, retryCount + 1)
                 }
                 if (response.status === 429) {
                     throw new Error('Rate limit reached. Please wait a moment and try again.')
@@ -179,7 +215,7 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
             const data = await response.json()
             return data.content
         } catch (error) {
-            console.error('Error calling Groq API:', error)
+            console.error(`Error calling ${model.name} API:`, error)
             if (error instanceof Error && error.message.includes('Rate limit')) {
                 return "I'm currently experiencing high demand. Please wait a moment and try again. I'll be right back! 🤖"
             }
@@ -187,92 +223,145 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
         }
     }
 
-    const generateSuggestions = (content: string): string[] => {
+    const generateSuggestions = (content: string, userInput?: string): string[] => {
         const suggestions: string[] = []
 
+        // Context-aware suggestions based on response content
         if (content.toLowerCase().includes('expense') || content.toLowerCase().includes('spending')) {
-            suggestions.push('Add an expense', 'View spending trends')
+            suggestions.push('Add a new expense', 'View spending by category', 'Set expense budget', 'Analyze spending trends')
         }
         if (content.toLowerCase().includes('income') || content.toLowerCase().includes('salary')) {
-            suggestions.push('Add income', 'Update monthly income')
+            suggestions.push('Log new income', 'Set up recurring salary', 'Update monthly income', 'Track income sources')
         }
         if (content.toLowerCase().includes('budget')) {
-            suggestions.push('Create budget', 'View budgets')
+            suggestions.push('Create new budget', 'Check budget status', 'Adjust budget limits', 'Monthly budget review')
         }
         if (content.toLowerCase().includes('bill') || content.toLowerCase().includes('payment')) {
-            suggestions.push('Add bill reminder', 'View upcoming bills')
+            suggestions.push('Add bill reminder', 'Mark bill as paid', 'Set up auto-pay', 'View upcoming bills')
         }
         if (content.toLowerCase().includes('goal') || content.toLowerCase().includes('save')) {
-            suggestions.push('Set savings goal', 'Track progress')
+            suggestions.push('Create savings goal', 'Update goal progress', 'Adjust goal target', 'Goal achievement plan')
         }
-        // Add crypto transfer suggestions
-        if (content.toLowerCase().includes('crypto') || content.toLowerCase().includes('transfer') || content.toLowerCase().includes('send')) {
-            suggestions.push('Crypto Transfer', 'Connect Wallet', 'View Transfer History')
+        if (content.toLowerCase().includes('debt') || content.toLowerCase().includes('loan')) {
+            suggestions.push('Add debt tracker', 'Create payment plan', 'Calculate payoff time', 'Debt consolidation advice')
+        }
+        if (content.toLowerCase().includes('crypto') || content.toLowerCase().includes('sui') || content.toLowerCase().includes('transfer')) {
+            suggestions.push('Send SUI transfer', 'Check crypto balance', 'View transfer history', 'Connect wallet')
+        }
+        if (content.toLowerCase().includes('report') || content.toLowerCase().includes('analysis')) {
+            suggestions.push('Generate monthly report', 'Spending breakdown', 'Income vs expenses', 'Financial health check')
+        }
+        if (content.toLowerCase().includes('account') || content.toLowerCase().includes('bank')) {
+            suggestions.push('Add bank account', 'Update balance', 'Account reconciliation', 'Transfer between accounts')
         }
 
-        // Default suggestions if none match
-        if (suggestions.length === 0) {
-            suggestions.push('Add transaction', 'Create budget', 'Set goal')
-        }
-
-        return suggestions.slice(0, 3) // Limit to 3 suggestions
-    }
-
-    // Function to detect crypto transfer commands
-    const detectCryptoTransfer = (input: string) => {
-        const patterns = [
-            /send\s+(\d+(?:\.\d+)?)\s+(sui)\s+to\s+(?:this\s+address\s+)?([a-zA-Z0-9]{64,66})/i,
-            /transfer\s+(\d+(?:\.\d+)?)\s+(sui)\s+to\s+([a-zA-Z0-9]{64,66})/i,
-            /pay\s+(\d+(?:\.\d+)?)\s+(sui)\s+to\s+([a-zA-Z0-9]{64,66})/i
-        ]
-
-        for (const pattern of patterns) {
-            const match = input.match(pattern)
-            if (match) {
-                const [, amount, currency, address] = match
-                // Validate SUI address format
-                if (!address.startsWith('0x') || (address.length !== 64 && address.length !== 66)) {
-                    return null
-                }
-                return {
-                    amount: parseFloat(amount),
-                    currency: currency.toUpperCase(),
-                    toAddress: address
-                }
+        // User input based suggestions
+        if (userInput) {
+            const input = userInput.toLowerCase()
+            if (input.includes('help') || input.includes('how')) {
+                suggestions.push('Step-by-step guide', 'Best practices', 'Common mistakes to avoid')
+            }
+            if (input.includes('start') || input.includes('begin')) {
+                suggestions.push('Quick setup wizard', 'Getting started tips', 'Essential first steps')
+            }
+            if (input.includes('improve') || input.includes('better')) {
+                suggestions.push('Optimization tips', 'Advanced strategies', 'Financial health check')
             }
         }
-        return null
+
+        // Always include these universal suggestions if none match
+        if (suggestions.length === 0) {
+            suggestions.push('Add transaction', 'Create budget', 'Set financial goal', 'View insights')
+        }
+
+        // Remove duplicates and return up to 5 suggestions
+        return [...new Set(suggestions)].slice(0, 5)
     }
 
     const generateActionButtons = (content: string, userInput?: string) => {
         const buttons: { label: string; action: string; variant?: 'primary' | 'secondary' }[] = []
 
+        // Check for crypto transfer commands in user input FIRST (highest priority)
+        if (userInput) {
+            const transferCommand = detectCryptoTransfer(userInput)
+            if (transferCommand) {
+                buttons.push({
+                    label: '🚀 Execute SUI Transfer',
+                    action: 'crypto-transfer',
+                    variant: 'primary'
+                })
+                buttons.push({
+                    label: 'Review Transfer Details',
+                    action: 'review-transfer',
+                    variant: 'secondary'
+                })
+                buttons.push({
+                    label: 'Cancel Transfer',
+                    action: 'cancel-transfer',
+                    variant: 'secondary'
+                })
+                return buttons // Return early for SUI transfers
+            }
+
+            // Check for general crypto mentions
+            const input = userInput.toLowerCase()
+            if ((input.includes('crypto') || input.includes('sui') || input.includes('transfer')) && !transferCommand) {
+                buttons.push({ label: '₿ Crypto Tools', action: 'crypto-tools', variant: 'primary' })
+            }
+        }
+
+        // Content-based action buttons (only if no SUI transfer detected)
         if (content.toLowerCase().includes('add') && content.toLowerCase().includes('transaction')) {
             buttons.push({ label: 'Add Transaction', action: 'add-transaction', variant: 'primary' })
         }
         if (content.toLowerCase().includes('create') && content.toLowerCase().includes('budget')) {
             buttons.push({ label: 'Create Budget', action: 'add-budget', variant: 'primary' })
         }
-        if (content.toLowerCase().includes('set') && content.toLowerCase().includes('goal')) {
-            buttons.push({ label: 'Set Goal', action: 'add-goal', variant: 'primary' })
+        if (content.toLowerCase().includes('set') && (content.toLowerCase().includes('goal') || content.toLowerCase().includes('save'))) {
+            buttons.push({ label: 'Set Savings Goal', action: 'add-goal', variant: 'primary' })
         }
-        if (content.toLowerCase().includes('add') && content.toLowerCase().includes('bill')) {
-            buttons.push({ label: 'Add Bill', action: 'add-bill', variant: 'primary' })
+        if (content.toLowerCase().includes('bill') || content.toLowerCase().includes('reminder')) {
+            buttons.push({ label: 'Add Bill Reminder', action: 'add-bill', variant: 'primary' })
+        }
+        if (content.toLowerCase().includes('bank') && content.toLowerCase().includes('account')) {
+            buttons.push({ label: 'Add Bank Account', action: 'add-account', variant: 'primary' })
+        }
+        if (content.toLowerCase().includes('recurring') || content.toLowerCase().includes('regular')) {
+            buttons.push({ label: 'Set Recurring Item', action: 'add-recurring', variant: 'primary' })
         }
 
-        // Check for crypto transfer commands in user input
+        // Income/expense specific buttons
+        if (content.toLowerCase().includes('income') || content.toLowerCase().includes('salary')) {
+            buttons.push({ label: 'Log Income', action: 'add-income', variant: 'primary' })
+        }
+        if (content.toLowerCase().includes('expense') || content.toLowerCase().includes('spend')) {
+            buttons.push({ label: 'Log Expense', action: 'add-expense', variant: 'primary' })
+        }
+
+        // Analysis and reporting buttons
+        if (content.toLowerCase().includes('report') || content.toLowerCase().includes('summary')) {
+            buttons.push({ label: 'Generate Report', action: 'generate-report', variant: 'secondary' })
+        }
+        if (content.toLowerCase().includes('analysis') || content.toLowerCase().includes('insight')) {
+            buttons.push({ label: 'View Insights', action: 'view-insights', variant: 'secondary' })
+        }
+
+        // Additional context buttons based on user input
         if (userInput) {
-            const transferCommand = detectCryptoTransfer(userInput)
-            if (transferCommand) {
-                buttons.push({
-                    label: 'Execute Crypto Transfer',
-                    action: 'crypto-transfer',
-                    variant: 'primary'
-                })
+            const input = userInput.toLowerCase()
+            if (input.includes('debt') && !buttons.some(b => b.action === 'add-debt')) {
+                buttons.push({ label: 'Track Debt', action: 'add-debt', variant: 'secondary' })
             }
         }
 
-        return buttons
+        // Always include a general "Add Transaction" if no specific actions
+        if (buttons.length === 0) {
+            buttons.push({ label: 'Add Transaction', action: 'add-transaction', variant: 'primary' })
+            buttons.push({ label: 'Create Budget', action: 'add-budget', variant: 'secondary' })
+        }
+
+        // Ensure we don't have too many buttons (max 4)
+        return buttons.slice(0, 4)
     }
 
     // Convert internal ChatMessage to Firebase ChatMessage
@@ -408,7 +497,7 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
         ]
 
         try {
-            const response = await callGroqAPI(apiMessages)
+            const response = await callAI(apiMessages)
 
             // Add actual response
             setMessages(prev => {
@@ -417,7 +506,7 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
                     content: response,
                     role: 'assistant',
                     timestamp: new Date(),
-                    suggestions: generateSuggestions(response),
+                    suggestions: generateSuggestions(response, content),
                     actionButtons: generateActionButtons(response, content)
                 }
                 return [...prev, assistantMessage]
@@ -451,22 +540,43 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
     }
 
     const handleActionClick = (action: string) => {
+        // Get conversation context from last few messages
+        const contextMessages = messages.slice(-3) // Get last 3 messages for context
+        const conversationContext = contextMessages
+            .map(msg => `${msg.role}: ${msg.content}`)
+            .join('\n')
+
         // Different actions can trigger different behaviors
         switch (action) {
             case 'add-transaction':
-                onActionClick?.('add-transaction')
+                onActionClick?.('add-transaction', conversationContext)
                 break
             case 'add-budget':
-                onActionClick?.('add-budget')
+                onActionClick?.('add-budget', conversationContext)
                 break
             case 'add-bill':
-                onActionClick?.('add-bill')
+                onActionClick?.('add-bill', conversationContext)
                 break
             case 'add-goal':
-                onActionClick?.('add-goal')
+                onActionClick?.('add-goal', conversationContext)
+                break
+            case 'add-income':
+                onActionClick?.('add-income', conversationContext)
+                break
+            case 'add-expense':
+                onActionClick?.('add-expense', conversationContext)
+                break
+            case 'add-recurring':
+                onActionClick?.('add-recurring', conversationContext)
+                break
+            case 'add-account':
+                onActionClick?.('add-account', conversationContext)
+                break
+            case 'add-debt':
+                onActionClick?.('add-debt', conversationContext)
                 break
             default:
-                onActionClick?.('add-transaction')
+                onActionClick?.(action, conversationContext)
                 break
         }
     }
@@ -820,6 +930,13 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
         )
     }
 
+    // Expose sendMessage method through ref
+    useImperativeHandle(ref, () => ({
+        sendMessage: (message: string) => {
+            handleUserMessage(message)
+        }
+    }), [handleUserMessage])
+
     return (
         <motion.div
             variants={containerVariants}
@@ -827,6 +944,44 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
             animate="visible"
             className={cn("flex flex-col h-full", className)}
         >
+            {/* Chat Header */}
+            <div className="rounded-3xl bg-background p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={onBackToIntro}
+                        className="p-2 hover:bg-emerald-50 rounded-full transition-colors"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <div>
+                        <h1 className="text-lg font-semibold">Financial Assistant</h1>
+                        <p className="text-sm text-muted-foreground">
+                            {conversationId ? 'Continue conversation' : 'AI-powered finance help'}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                        <Settings className="w-4 h-4 text-muted-foreground" />
+                        <Select value={selectedModel} onValueChange={setSelectedModel}>
+                            <SelectTrigger className="w-40 h-8 text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {AI_MODELS.map((model) => (
+                                    <SelectItem key={model.id} value={model.id}>
+                                        {model.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            </div>
+
             {/* Chat Messages */}
             <div
                 ref={chatContainerRef}
@@ -838,10 +993,16 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
                             <Bot className="w-8 h-8 text-white" />
                         </div>
                         <h3 className="text-xl font-semibold mb-2">Financial Assistant</h3>
-                        <p className="text-muted-foreground max-w-md">
+                        <p className="text-muted-foreground max-w-md mb-3">
                             Hi {user.name.split(' ')[0]}! I&apos;m here to help you manage your finances.
                             Ask me anything about budgets, expenses, savings goals, or financial planning.
                         </p>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+                            <span>Powered by</span>
+                            <span className="font-semibold text-emerald-600">
+                                {AI_MODELS.find(m => m.id === selectedModel)?.name}
+                            </span>
+                        </div>
                         <div className="flex flex-wrap gap-2 mt-6">
                             {[
                                 'Help me create a budget',
@@ -891,6 +1052,13 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
                             <Bot className="w-4 h-4 text-white" />
                         </div>
                         <div className="flex-1 max-w-3xl">
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="text-sm text-muted-foreground">
+                                    {AI_MODELS.find(m => m.id === selectedModel)?.name} is thinking...
+                                </span>
+                            </div>
+                            <MessageLoading />
+                            <MessageLoading />
                             <MessageLoading />
                             <MessageLoading />
                             <MessageLoading />
@@ -915,6 +1083,55 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
             {/* Floating Action Buttons */}
             {messages.length > 0 && (
                 <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-10">
+                    {/* Model Selector Button */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="relative"
+                    >
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowModelSelector(!showModelSelector)}
+                            className="w-12 h-12 bg-white hover:bg-gray-50 border-emerald-200 hover:border-emerald-300 rounded-full shadow-lg flex items-center justify-center transition-colors"
+                            title="Change AI Model"
+                        >
+                            <Settings className="w-5 h-5 text-emerald-600" />
+                        </Button>
+
+                        {showModelSelector && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-xl shadow-2xl border border-emerald-200 overflow-hidden"
+                            >
+                                <div className="p-3 border-b border-emerald-100">
+                                    <h4 className="font-semibold text-sm text-emerald-800">AI Model</h4>
+                                </div>
+                                <div className="p-2">
+                                    {AI_MODELS.map((model) => (
+                                        <button
+                                            key={model.id}
+                                            onClick={() => {
+                                                setSelectedModel(model.id)
+                                                setShowModelSelector(false)
+                                                toast.success(`Switched to ${model.name}`)
+                                            }}
+                                            className={cn(
+                                                "w-full text-left px-3 py-2 text-sm rounded-lg transition-colors",
+                                                selectedModel === model.id
+                                                    ? "bg-emerald-100 text-emerald-800 font-medium"
+                                                    : "hover:bg-emerald-50 text-gray-700"
+                                            )}
+                                        >
+                                            {model.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+                    </motion.div>
+
                     {/* Scroll to Top Button */}
                     <motion.button
                         initial={{ opacity: 0, scale: 0.8 }}
@@ -956,4 +1173,6 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
             )}
         </motion.div>
     )
-} 
+})
+
+Chat.displayName = 'Chat' 

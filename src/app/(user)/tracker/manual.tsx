@@ -25,31 +25,6 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-interface ManualEntryProps {
-    user: User
-    isOpen: boolean
-    onClose: () => void
-    onComplete?: () => void
-    className?: string
-    initialType?: DataType
-}
-
-type DataType =
-    | 'transaction'
-    | 'budget'
-    | 'bill-reminder'
-    | 'bank-account'
-    | 'recurring-item'
-
-type ManualStep =
-    | 'select-type'
-    | 'transaction-details'
-    | 'budget-details'
-    | 'bill-details'
-    | 'account-details'
-    | 'recurring-details'
-    | 'completion'
-
 interface FormData {
     // Transaction fields
     transactionType?: 'income' | 'expense' | 'transfer'
@@ -83,6 +58,32 @@ interface FormData {
     frequency?: 'weekly' | 'biweekly' | 'monthly'
     nextDueDate?: string
 }
+
+interface ManualEntryProps {
+    user: User
+    isOpen: boolean
+    onClose: () => void
+    onComplete?: () => void
+    className?: string
+    initialType?: DataType
+    initialFormData?: FormData
+}
+
+type DataType =
+    | 'transaction'
+    | 'budget'
+    | 'bill-reminder'
+    | 'bank-account'
+    | 'recurring-item'
+
+type ManualStep =
+    | 'select-type'
+    | 'transaction-details'
+    | 'budget-details'
+    | 'bill-details'
+    | 'account-details'
+    | 'recurring-details'
+    | 'completion'
 
 const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -157,10 +158,10 @@ const CURRENCIES: { value: Currency; label: string; symbol: string }[] = [
     { value: 'MXN', label: 'Mexican Peso', symbol: '$' },
 ]
 
-export default function ManualEntry({ user, isOpen, onClose, onComplete, initialType }: ManualEntryProps) {
+export default function ManualEntry({ user, isOpen, onClose, onComplete, initialType, initialFormData }: ManualEntryProps) {
     const [currentStep, setCurrentStep] = useState<ManualStep>('select-type')
     const [selectedType, setSelectedType] = useState<DataType | null>(initialType || null)
-    const [formData, setFormData] = useState<FormData>({})
+    const [formData, setFormData] = useState<FormData>(initialFormData || {})
     const [isLoading, setIsLoading] = useState(false)
 
     const selectedCurrency = CURRENCIES.find(c => c.value === user.preferredCurrency) || CURRENCIES[0]
@@ -169,7 +170,8 @@ export default function ManualEntry({ user, isOpen, onClose, onComplete, initial
         if (isOpen) {
             if (initialType) {
                 setSelectedType(initialType)
-                setFormData({})
+                // Merge initial form data with any existing data
+                setFormData(prev => ({ ...prev, ...initialFormData }))
                 setIsLoading(false)
                 // Automatically navigate to the specific step
                 switch (initialType) {
@@ -192,15 +194,16 @@ export default function ManualEntry({ user, isOpen, onClose, onComplete, initial
             } else {
                 setCurrentStep('select-type')
                 setSelectedType(null)
-                setFormData({})
+                setFormData(initialFormData || {})
                 setIsLoading(false)
             }
         }
-    }, [isOpen, initialType])
+    }, [isOpen, initialType, initialFormData])
 
     const handleTypeSelect = (type: DataType) => {
         setSelectedType(type)
-        setFormData({})
+        // Keep initial form data when selecting type
+        setFormData(prev => ({ ...prev, ...initialFormData }))
 
         switch (type) {
             case 'transaction':
@@ -227,7 +230,8 @@ export default function ManualEntry({ user, isOpen, onClose, onComplete, initial
         } else {
             setCurrentStep('select-type')
             setSelectedType(null)
-            setFormData({})
+            // Keep initial form data when going back
+            setFormData(initialFormData || {})
         }
     }
 
