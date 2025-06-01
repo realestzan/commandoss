@@ -18,6 +18,8 @@ export async function POST(request: NextRequest) {
 
         console.log('GPT API called with model:', model)
         console.log('Messages count:', messages.length)
+        console.log('API Key present:', !!OPENAI_API_KEY)
+        console.log('API Key length:', OPENAI_API_KEY?.length || 0)
 
         if (!OPENAI_API_KEY) {
             console.error('No OpenAI API key found')
@@ -60,20 +62,30 @@ export async function POST(request: NextRequest) {
         })
 
         console.log('OpenAI response status:', response.status)
+        console.log('OpenAI response headers:', Object.fromEntries(response.headers.entries()))
 
         if (!response.ok) {
             const errorData = await response.text()
             console.error('OpenAI API error:', response.status, errorData)
 
+            // Try to parse error data
+            let parsedError
+            try {
+                parsedError = JSON.parse(errorData)
+                console.error('Parsed OpenAI error:', parsedError)
+            } catch {
+                console.error('Could not parse error response as JSON')
+            }
+
             // Provide more specific error messages
             if (response.status === 401) {
                 return NextResponse.json(
-                    { error: 'Invalid OpenAI API key' },
+                    { error: 'Invalid OpenAI API key. Please check your API key in environment variables.' },
                     { status: 401 }
                 )
             } else if (response.status === 429) {
                 return NextResponse.json(
-                    { error: 'OpenAI rate limit exceeded' },
+                    { error: 'OpenAI rate limit exceeded. Please wait a moment and try again.' },
                     { status: 429 }
                 )
             } else if (response.status === 400) {
@@ -81,16 +93,22 @@ export async function POST(request: NextRequest) {
                     { error: 'Invalid request to OpenAI API', details: errorData },
                     { status: 400 }
                 )
+            } else if (response.status === 403) {
+                return NextResponse.json(
+                    { error: 'OpenAI API access forbidden. Check your API key permissions and billing status.' },
+                    { status: 403 }
+                )
             }
 
             return NextResponse.json(
-                { error: 'Failed to get response from AI', details: errorData },
+                { error: `OpenAI API error (${response.status})`, details: errorData },
                 { status: response.status }
             )
         }
 
         const data = await response.json()
         console.log('OpenAI response received successfully')
+        console.log('Usage info:', data.usage)
 
         if (!data.choices || !data.choices[0] || !data.choices[0].message) {
             console.error('Unexpected OpenAI API response format:', data)

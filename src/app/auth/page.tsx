@@ -171,7 +171,7 @@ export default function AuthPage() {
                     <Onboarding
                         user={currentUser}
                         onComplete={handleOnboardingComplete}
-                        className='bg-background/80 rounded-3xl shadow-2xl h-[80vh] '
+                        className='bg-background/80x rounded-3xl shadow-2xl h-[80vh] '
                     />
                 </div>
             </div>

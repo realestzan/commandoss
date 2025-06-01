@@ -200,6 +200,24 @@ export const Chat = forwardRef<ChatRef, ChatProps>(({ user, initialInputValue, c
             })
 
             if (!response.ok) {
+                // Extract the actual error message from the API response
+                let errorMessage = 'Failed to get response'
+                try {
+                    const errorData = await response.json()
+                    if (errorData.error) {
+                        errorMessage = errorData.error
+                        // Include details if available
+                        if (errorData.details) {
+                            errorMessage += `: ${errorData.details}`
+                        }
+                    }
+                } catch {
+                    // If we can't parse the error response, use status text
+                    errorMessage = `HTTP ${response.status}: ${response.statusText}`
+                }
+
+                console.error(`${model.name} API Error (${response.status}):`, errorMessage)
+
                 if (response.status === 429 && retryCount < 2) {
                     // Retry with exponential backoff
                     const delay = Math.pow(2, retryCount) * 2000 // 2s, 4s, 8s
@@ -209,7 +227,9 @@ export const Chat = forwardRef<ChatRef, ChatProps>(({ user, initialInputValue, c
                 if (response.status === 429) {
                     throw new Error('Rate limit reached. Please wait a moment and try again.')
                 }
-                throw new Error('Failed to get response')
+
+                // Throw the actual error message
+                throw new Error(errorMessage)
             }
 
             const data = await response.json()
@@ -219,6 +239,12 @@ export const Chat = forwardRef<ChatRef, ChatProps>(({ user, initialInputValue, c
             if (error instanceof Error && error.message.includes('Rate limit')) {
                 return "I'm currently experiencing high demand. Please wait a moment and try again. I'll be right back! 🤖"
             }
+
+            // Return the actual error message if available
+            if (error instanceof Error) {
+                return `I encountered an error: ${error.message}. Please check your API configuration and try again.`
+            }
+
             return "I'm sorry, I'm having trouble connecting right now. Please try again in a moment."
         }
     }
