@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -156,7 +157,7 @@ const CURRENCIES: { value: Currency; label: string; symbol: string }[] = [
     { value: 'MXN', label: 'Mexican Peso', symbol: '$' },
 ]
 
-export default function ManualEntry({ user, isOpen, onClose, onComplete, className, initialType }: ManualEntryProps) {
+export default function ManualEntry({ user, isOpen, onClose, onComplete, initialType }: ManualEntryProps) {
     const [currentStep, setCurrentStep] = useState<ManualStep>('select-type')
     const [selectedType, setSelectedType] = useState<DataType | null>(initialType || null)
     const [formData, setFormData] = useState<FormData>({})
@@ -327,13 +328,8 @@ export default function ManualEntry({ user, isOpen, onClose, onComplete, classNa
     if (!isOpen) return null
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className={cn('bg-background rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl border-0', className)}
-            >
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="min-w-[40vw] max-h-[90vh] overflow-hidden shadow-2xl border-0 p-0">
                 <motion.div
                     variants={containerVariants}
                     initial="hidden"
@@ -861,7 +857,7 @@ export default function ManualEntry({ user, isOpen, onClose, onComplete, classNa
                         </div>
                     )}
                 </motion.div>
-            </motion.div>
-        </div>
+            </DialogContent>
+        </Dialog>
     )
 } 

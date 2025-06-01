@@ -122,5 +122,5 @@
 }
 
 .bg-card {
-  @apply bg-black/5 dark:bg-white/5;
+  @apply bg-black/5 dark:bg-white/5 backdrop-blur-xl;
 }

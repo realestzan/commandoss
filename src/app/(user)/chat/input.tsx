@@ -249,7 +249,7 @@ export function ChatInput({ onSubmit, isLoading, initialInputValue, replyTo }: C
                         const textarea = document.querySelector('textarea')
                         textarea?.focus()
                     }}
-                    className={`absolute bg-gradient-to-r from-emerald-400 to-emerald-600 right-2 top-2 rounded-lg p-3 text-white 
+                    className={`absolute bg-gradient-to-r from-emerald-400 to-emerald-600 aspect-square w-10 h-10 rounded-full right-2 top-2 p-3 text-white 
                         hover:text-zinc-700 transition-colors ${!isFocused ? 'opacity-100' : 'hidden'}`}
                 >
                     <ArrowRight className='h-5 w-5' />

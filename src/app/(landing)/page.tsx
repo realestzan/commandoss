@@ -29,16 +29,16 @@ export default function Home() {
                 </div>
 
                 <nav className='hidden md:flex items-center gap-8'>
-                    <Link href='/how-it-works' className='text-foreground-muted hover:text-background transition-colors'>
+                    <Link href='/how-it-works' className='hover:text-emerald-700 transition-colors'>
                         How it works
                     </Link>
-                    <Link href='/pricing' className='text-foreground-muted hover:text-background transition-colors'>
+                    <Link href='/pricing' className='hover:text-emerald-700 transition-colors'>
                         Pricing
                     </Link>
-                    <Link href='/faq' className='text-foreground-muted hover:text-background transition-colors'>
+                    <Link href='/faq' className='hover:text-emerald-700 transition-colors'>
                         FAQ
                     </Link>
-                    <Link href='/resources' className='text-foreground-muted hover:text-background transition-colors'>
+                    <Link href='/resources' className='hover:text-emerald-700 transition-colors'>
                         Resources
                     </Link>
                 </nav>
@@ -62,10 +62,10 @@ export default function Home() {
             {/* Hero Section */}
             <section className='max-w-7xl mx-auto px-6 py-20'>
                 <div className='text-center max-w-4xl mx-auto mb-16'>
-                    <h1 className='text-6xl md:text-7xl font-bold text-foreground leading-tight mb-6'>
+                    <h1 className='text-7xl font-bold text-foreground leading-tight mb-6'>
                         Your finances as
                         <br />
-                        <span className='text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-emerald-600'>
+                        <span className='text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-emerald-600 leading-tight'>
                             a service
                         </span>
                     </h1>
@@ -91,7 +91,7 @@ export default function Home() {
                 {/* Feature Showcase Grid */}
                 <div className='grid grid-cols-1 lg:grid-cols-4 gap-6 mt-20'>
                     {/* Budget Planner Card */}
-                    <Card className='bg-black text-white p-6 rounded-3xl lg:col-span-1'>
+                    <Card className='p-6 rounded-3xl lg:col-span-1'>
                         <CardContent className='p-0'>
                             <div className='mb-6'>
                                 <div className='text-sm text-gray-400 mb-2'>Select budget</div>
@@ -112,7 +112,7 @@ export default function Home() {
                                     </div>
                                 </div>
 
-                                <div className='mt-6 p-3 bg-gray-800 rounded-xl'>
+                                <div className='mt-6 p-3 bg-foreground text-background rounded-xl'>
                                     <div className='flex items-center gap-2'>
                                         <Target className='w-4 h-4' />
                                         <span className='text-sm'>Set new budget</span>
@@ -147,7 +147,7 @@ export default function Home() {
                     </Card>
 
                     {/* Smart Insights */}
-                    <Card className='bg-background p-6 rounded-3xl lg:col-span-1'>
+                    <Card className='bg-card p-6 rounded-3xl lg:col-span-1'>
                         <CardContent className='p-0'>
                             <div className='text-center'>
                                 <h3 className='text-xl font-bold text-foreground-muted mb-3'>

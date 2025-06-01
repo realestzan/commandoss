@@ -6,9 +6,9 @@ import { cn } from '@/lib/utils'
 import { motion, Variants } from 'framer-motion'
 import { Bot, ChevronUp, Save } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import ManualEntry from '../tracker/manual'
 import { ChatInput } from './input'
 import { Message } from './message'
+import MessageLoading from './message-loading'
 
 // Internal message type with Date timestamp and loading state
 interface InternalChatMessage extends Omit<ChatMessage, 'timestamp'> {
@@ -22,6 +22,7 @@ interface ChatProps {
     className?: string
     conversationId?: string
     onConversationSaved?: () => void
+    onActionClick?: (action: string) => void
 }
 
 const containerVariants: Variants = {
@@ -75,11 +76,9 @@ If a user wants to add any financial data, offer action buttons to help them do 
 
 Keep responses concise and actionable. Always be encouraging about their financial journey.`
 
-export function Chat({ user, initialInputValue, className, conversationId, onConversationSaved }: ChatProps) {
+export function Chat({ user, initialInputValue, className, conversationId, onConversationSaved, onActionClick }: ChatProps) {
     const [messages, setMessages] = useState<InternalChatMessage[]>([])
     const [isLoading, setIsLoading] = useState(false)
-    const [isManualEntryOpen, setIsManualEntryOpen] = useState(false)
-    const [manualEntryType, setManualEntryType] = useState<'transaction' | 'budget' | 'bill-reminder' | 'bank-account' | 'recurring-item' | undefined>()
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(conversationId || null)
     const [isSaving, setIsSaving] = useState(false)
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
@@ -292,17 +291,6 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
         setMessages(newMessages)
         setIsLoading(true)
 
-        // Add loading message
-        const loadingMessage: InternalChatMessage = {
-            id: generateMessageId(),
-            content: '',
-            role: 'assistant',
-            timestamp: new Date(),
-            isLoading: true
-        }
-
-        setMessages(prev => [...prev, loadingMessage])
-
         // Prepare messages for API
         const apiMessages = [
             {
@@ -326,9 +314,8 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
         try {
             const response = await callGroqAPI(apiMessages)
 
-            // Remove loading message and add actual response
+            // Add actual response
             setMessages(prev => {
-                const withoutLoading = prev.filter(msg => !msg.isLoading)
                 const assistantMessage: InternalChatMessage = {
                     id: generateMessageId(),
                     content: response,
@@ -337,19 +324,18 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
                     suggestions: generateSuggestions(response),
                     actionButtons: generateActionButtons(response)
                 }
-                return [...withoutLoading, assistantMessage]
+                return [...prev, assistantMessage]
             })
         } catch {
-            // Remove loading message and add error message
+            // Add error message
             setMessages(prev => {
-                const withoutLoading = prev.filter(msg => !msg.isLoading)
                 const errorMessage: InternalChatMessage = {
                     id: generateMessageId(),
                     content: "I'm sorry, I encountered an error. Please try again.",
                     role: 'assistant',
                     timestamp: new Date()
                 }
-                return [...withoutLoading, errorMessage]
+                return [...prev, errorMessage]
             })
         }
 
@@ -372,39 +358,21 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
         // Different actions can trigger different behaviors
         switch (action) {
             case 'add-transaction':
-                setIsManualEntryOpen(true)
-                setManualEntryType('transaction')
+                onActionClick?.('add-transaction')
                 break
             case 'add-budget':
-                setIsManualEntryOpen(true)
-                setManualEntryType('budget')
+                onActionClick?.('add-budget')
                 break
             case 'add-bill':
-                setIsManualEntryOpen(true)
-                setManualEntryType('bill-reminder')
+                onActionClick?.('add-bill')
                 break
             case 'add-goal':
-                setIsManualEntryOpen(true)
-                setManualEntryType('bank-account') // or create a new goal type
+                onActionClick?.('add-goal')
                 break
             default:
-                setIsManualEntryOpen(true)
-                setManualEntryType(undefined)
+                onActionClick?.('add-transaction')
                 break
         }
-    }
-
-    const handleManualEntryComplete = () => {
-        // Add a confirmation message
-        const confirmationMessage: InternalChatMessage = {
-            id: generateMessageId(),
-            content: "Great! I've helped you add that financial data. Is there anything else you'd like to track or manage?",
-            role: 'assistant',
-            timestamp: new Date(),
-            suggestions: ['Add another transaction', 'View my budget', 'Set a new goal']
-        }
-
-        setMessages(prev => [...prev, confirmationMessage])
     }
 
     return (
@@ -412,7 +380,7 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className={cn("flex flex-col h-full relative", className)}
+            className={cn("flex flex-col h-full", className)}
         >
             {/* Chat Messages */}
             <div
@@ -463,11 +431,32 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
                         onActionClick={handleActionClick}
                     />
                 ))}
+
+                {/* Show loading animation when waiting for response */}
+                {isLoading && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-start gap-4 px-4 py-6"
+                    >
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 flex items-center justify-center flex-shrink-0">
+                            <Bot className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1 max-w-3xl">
+                            <MessageLoading />
+                            <MessageLoading />
+                            <MessageLoading />
+                            <MessageLoading />
+                            <MessageLoading />
+                        </div>
+                    </motion.div>
+                )}
+
                 <div ref={messagesEndRef} />
             </div>
 
             {/* Chat Input */}
-            <div className="px-4 pr-12">
+            <div className="px-4 pr-20">
                 <ChatInput
                     onSubmit={handleUserMessage}
                     isLoading={isLoading}
@@ -517,18 +506,6 @@ export function Chat({ user, initialInputValue, className, conversationId, onCon
                     </motion.button>
                 </div>
             )}
-
-            {/* Manual Entry Modal */}
-            <ManualEntry
-                user={user}
-                isOpen={isManualEntryOpen}
-                onClose={() => {
-                    setIsManualEntryOpen(false)
-                    setManualEntryType(undefined)
-                }}
-                onComplete={handleManualEntryComplete}
-                initialType={manualEntryType}
-            />
         </motion.div>
     )
 } 
