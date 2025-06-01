@@ -35,7 +35,7 @@ export default function UserLayout({ children }: UserLayoutProps) {
             <SuiClientProvider networks={networks} defaultNetwork='testnet'>
                 <WalletProvider
                     slushWallet={{
-                        name: 'Commandoss Finance App'
+                        name: 'Realfin Finance App'
                     }}
                 >
                     <div className='flex min-h-screen h-screen '>

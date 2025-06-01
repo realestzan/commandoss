@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Footer } from '@/components/ui/footer'
 import {
     ArrowLeft,
     BarChart3,
@@ -33,11 +34,11 @@ export default function FAQPage() {
             icon: <Bot className='w-5 h-5 text-emerald-500' />,
             questions: [
                 {
-                    question: 'What is FinanceAI and how does it work?',
-                    answer: 'FinanceAI is an intelligent personal finance assistant powered by advanced AI models. It helps you manage budgets, track expenses, set financial goals, and provides personalized financial insights through natural conversation. Simply chat with our AI to get instant help with your finances.'
+                    question: 'What is Realfin and how does it work?',
+                    answer: 'Realfin is an intelligent personal finance assistant powered by advanced AI models. It helps you manage budgets, track expenses, set financial goals, and provides personalized financial insights through natural conversation. Simply chat with our AI to get instant help with your finances.'
                 },
                 {
-                    question: 'How do I start using FinanceAI?',
+                    question: 'How do I start using Realfin?',
                     answer: 'Getting started is easy! Sign up for a free account, connect your financial accounts (optional), and start chatting with our AI assistant. You can ask questions like "Help me create a budget" or "Show me my spending patterns" to begin.'
                 },
                 {
@@ -46,7 +47,7 @@ export default function FAQPage() {
                 },
                 {
                     question: 'Is there a mobile app available?',
-                    answer: 'Yes! FinanceAI is available on both iOS and Android. You can also access it through our web application. All your data syncs seamlessly across all devices.'
+                    answer: 'Yes! Realfin is available on both iOS and Android. You can also access it through our web application. All your data syncs seamlessly across all devices.'
                 }
             ]
         },
@@ -59,7 +60,7 @@ export default function FAQPage() {
                     answer: 'You can ask about budgeting, expense tracking, financial goals, investment advice, debt management, spending analysis, bill reminders, and much more. The AI understands natural language, so ask questions as you would to a financial advisor.'
                 },
                 {
-                    question: 'Which AI models power FinanceAI?',
+                    question: 'Which AI models power Realfin?',
                     answer: 'We use multiple advanced AI models including GPT-4, Claude, Gemini, and specialized financial reasoning models. Pro users get access to the latest models like GPT-4o, Claude 4, and Grok for more sophisticated financial analysis.'
                 },
                 {
@@ -112,7 +113,7 @@ export default function FAQPage() {
                 },
                 {
                     question: 'Do you offer refunds?',
-                    answer: 'We offer a 30-day money-back guarantee for new subscribers. If you&rsquo;re not satisfied with FinanceAI Pro, contact our support team within 30 days for a full refund.'
+                    answer: 'We offer a 30-day money-back guarantee for new subscribers. If you&rsquo;re not satisfied with Realfin Pro, contact our support team within 30 days for a full refund.'
                 }
             ]
         },
@@ -121,8 +122,8 @@ export default function FAQPage() {
             icon: <BarChart3 className='w-5 h-5 text-orange-500' />,
             questions: [
                 {
-                    question: 'What kind of insights does FinanceAI provide?',
-                    answer: 'FinanceAI analyzes your spending patterns, identifies trends, suggests budget optimizations, tracks goal progress, predicts future expenses, and provides personalized recommendations to improve your financial health.'
+                    question: 'What kind of insights does Realfin provide?',
+                    answer: 'Realfin analyzes your spending patterns, identifies trends, suggests budget optimizations, tracks goal progress, predicts future expenses, and provides personalized recommendations to improve your financial health.'
                 },
                 {
                     question: 'Can I set and track financial goals?',
@@ -153,7 +154,7 @@ export default function FAQPage() {
                     <div className='w-8 h-8 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center'>
                         <Bot className='w-5 h-5 text-white' />
                     </div>
-                    <span className='text-xl font-bold text-foreground'>FinanceAI</span>
+                    <span className='text-xl font-bold text-foreground'>Realfin</span>
                 </div>
 
                 <div className='flex items-center gap-3'>
@@ -181,7 +182,7 @@ export default function FAQPage() {
                         Frequently Asked Questions
                     </h1>
                     <p className='text-xl text-foreground/70'>
-                        Everything you need to know about FinanceAI
+                        Everything you need to know about Realfin
                     </p>
                 </div>
 
@@ -242,7 +243,7 @@ export default function FAQPage() {
                         Still have questions?
                     </h2>
                     <p className='text-xl text-foreground/70 mb-8'>
-                        Our support team is here to help you get the most out of FinanceAI
+                        Our support team is here to help you get the most out of Realfin
                     </p>
                     <div className='flex flex-col sm:flex-row gap-4 justify-center'>
                         <Link href='/auth'>
@@ -256,6 +257,8 @@ export default function FAQPage() {
                     </div>
                 </div>
             </section>
+
+            <Footer />
         </main>
     )
 } 

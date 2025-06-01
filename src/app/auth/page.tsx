@@ -166,12 +166,12 @@ export default function AuthPage() {
 
     if (authMode === 'onboarding' && currentUser) {
         return (
-            <div className='flex items-center justify-center min-h-screen bg-background'>
+            <div className='flex items-center justify-center min-h-screen bg-green-900/20'>
                 <div className='w-full max-w-4xl mx-auto p-6'>
                     <Onboarding
                         user={currentUser}
                         onComplete={handleOnboardingComplete}
-                        className='bg-card rounded-3xl shadow-2xl h-[80vh]'
+                        className='bg-background/80 rounded-3xl shadow-2xl h-[80vh] '
                     />
                 </div>
             </div>

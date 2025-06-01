@@ -21,5 +21,6 @@ and can perform some action when user chat with the bot such as:
 - add Transaction
 - create FinancialGoal
 - and more ... 
+- send crypto from this account (such as SUI) to another address
 
 I have put the neccessary field in the types.types

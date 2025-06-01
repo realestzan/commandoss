@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Footer } from '@/components/ui/footer'
 import {
     ArrowLeft,
     BarChart3,
@@ -22,7 +23,7 @@ export default function PricingPage() {
 
     const plans = [
         {
-            name: 'FinanceAI',
+            name: 'Realfin',
             subtitle: 'Free, forever.',
             price: 0,
             yearlyPrice: 0,
@@ -33,7 +34,7 @@ export default function PricingPage() {
                 'Simple Financial Calculator, Goal Tracker,',
                 'Monthly Reports + many more...',
                 '',
-                'FinanceAI Chat',
+                'Realfin Chat',
                 '50 Free Messages. Try any Pro model',
                 '',
                 'Personal Finance Notes',
@@ -50,7 +51,7 @@ export default function PricingPage() {
             popular: false
         },
         {
-            name: 'FinanceAI Pro',
+            name: 'Realfin Pro',
             subtitle: 'AI at your fingertips',
             price: 8,
             yearlyPrice: 96,
@@ -60,7 +61,7 @@ export default function PricingPage() {
                 '',
                 'Everything in Free',
                 '',
-                'FinanceAI Chat, including:',
+                'Realfin Chat, including:',
                 'GPT-4 Chat, GPT-4 mini',
                 'Claude Sonnet, Claude Haiku, Claude Opus mini',
                 'Gemini Pro, Gemini Flash',
@@ -130,7 +131,7 @@ export default function PricingPage() {
                     <div className='w-8 h-8 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center'>
                         <Bot className='w-5 h-5 text-white' />
                     </div>
-                    <span className='text-xl font-bold text-foreground'>FinanceAI</span>
+                    <span className='text-xl font-bold text-foreground'>Realfin</span>
                 </div>
 
                 <div className='flex items-center gap-3'>
@@ -269,7 +270,7 @@ export default function PricingPage() {
                 {/* Features Comparison */}
                 <div className='mt-20 text-center'>
                     <h2 className='text-3xl font-bold text-foreground mb-8'>
-                        Why Choose FinanceAI?
+                        Why Choose Realfin?
                     </h2>
 
                     <div className='grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto'>
@@ -286,7 +287,7 @@ export default function PricingPage() {
                         </div>
 
                         <div className='text-center'>
-                            <div className='w-16 h-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4'>
+                            <div className='w-16 h-16 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4'>
                                 <BarChart3 className='w-8 h-8 text-white' />
                             </div>
                             <h3 className='text-xl font-semibold text-foreground mb-2'>
@@ -298,7 +299,7 @@ export default function PricingPage() {
                         </div>
 
                         <div className='text-center'>
-                            <div className='w-16 h-16 bg-gradient-to-r from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4'>
+                            <div className='w-16 h-16 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4'>
                                 <Target className='w-8 h-8 text-white' />
                             </div>
                             <h3 className='text-xl font-semibold text-foreground mb-2'>
@@ -333,6 +334,9 @@ export default function PricingPage() {
                     </div>
                 </div>
             </section>
+
+            {/* Footer */}
+            <Footer />
         </main>
     )
 } 

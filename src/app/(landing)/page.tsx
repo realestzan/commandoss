@@ -3,7 +3,9 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Footer } from '@/components/ui/footer'
 import { ThemeToggle } from '@/components/ui/toggle-theme'
+import { motion } from 'framer-motion'
 import {
     ArrowRight,
     BarChart3,
@@ -23,9 +25,15 @@ export default function Home() {
             <header className='flex items-center justify-between p-6 max-w-7xl mx-auto'>
                 <div className='flex items-center gap-2'>
                     <div className='w-8 h-8 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center'>
-                        <Bot className='w-5 h-5 text-white' />
+                        <motion.div
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                            whileTap={{ scale: 0.95 }}
+                            className='w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-md'
+                        >
+                            <div className='w-4 h-4 bg-white rounded-full'></div>
+                        </motion.div>
                     </div>
-                    <span className='text-xl font-bold'>FinanceAI</span>
+                    <span className='text-xl font-bold'>Realfin</span>
                 </div>
 
                 <nav className='hidden md:flex items-center gap-8'>
@@ -45,7 +53,7 @@ export default function Home() {
 
                 <div className='flex items-center gap-3'>
                     <Link href='/auth'>
-                        <Button variant='ghost' className='text-foreground-muted hover:text-background'>
+                        <Button variant='ghost' className=''>
                             Log in
                         </Button>
                     </Link>
@@ -270,6 +278,9 @@ export default function Home() {
                     </p>
                 </div>
             </section>
+
+            {/* Footer */}
+            <Footer />
         </main>
     )
 }

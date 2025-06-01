@@ -95,7 +95,7 @@ export default function Sidebar({ user }: { user?: User }) {
                         >
                             <div className='w-4 h-4 bg-white rounded-full'></div>
                         </motion.div>
-                        <span className='text-xl font-semibold text-gray-900 dark:text-gray-100'>Commandoss</span>
+                        <span className='text-xl font-semibold text-gray-900 dark:text-gray-100'>Realfin</span>
                     </motion.div>
                 </Link>
 

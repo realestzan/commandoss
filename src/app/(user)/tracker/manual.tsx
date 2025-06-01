@@ -120,7 +120,7 @@ const DATA_TYPES = [
         name: 'Budget',
         description: 'Create spending budget',
         icon: Target,
-        color: 'from-blue-500 to-blue-600'
+        color: 'from-emerald-400 to-emerald-600'
     },
     {
         type: 'bill-reminder' as DataType,
@@ -134,7 +134,7 @@ const DATA_TYPES = [
         name: 'Bank Account',
         description: 'Add bank account',
         icon: Wallet,
-        color: 'from-purple-500 to-purple-600'
+        color: 'from-emerald-400 to-emerald-600'
     },
     {
         type: 'recurring-item' as DataType,
