@@ -1,0 +1,25 @@
+I want to create a Personal Finance Chatbot,
+
+that can under some info from user, such as 
+export type User = {
+    id: string;
+    email: string;
+    name: string;
+    avatar: string;
+
+    preferredCurrency: string;
+    createdAt: string;
+    monthlyIncome?: number;
+    defaultBudgetId?: string;
+    financialGoals?: FinancialGoal[];
+}
+
+and can perform some action when user chat with the bot such as: 
+- create Budget
+- add BillReminder
+- give ChatInsight
+- add Transaction
+- create FinancialGoal
+- and more ... 
+
+I have put the neccessary field in the types.types
