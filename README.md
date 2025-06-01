@@ -2,6 +2,9 @@
 
 An intelligent personal finance management platform with AI-powered chatbot capabilities, crypto wallet integration, and comprehensive financial tracking.
 
+Youtube showcase
+https://youtu.be/7q-rwSygtdo
+
 ## 🌟 Features
 
 ### 💬 AI-Powered Chat Assistant
