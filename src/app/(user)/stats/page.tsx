@@ -233,28 +233,12 @@ export default function StatsPage() {
     const router = useRouter()
     const [stats, setStats] = useState<FinancialStats | null>(null)
     const [isLoading, setIsLoading] = useState(true)
-    const [currentTime, setCurrentTime] = useState('01:24:08')
 
     useEffect(() => {
         if (!loading && !isAuthenticated) {
             router.push('/auth')
         }
     }, [loading, isAuthenticated, router])
-
-    useEffect(() => {
-        const timer = setInterval(() => {
-            const now = new Date()
-            const timeString = now.toLocaleTimeString('en-US', {
-                hour12: false,
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            })
-            setCurrentTime(timeString)
-        }, 1000)
-
-        return () => clearInterval(timer)
-    }, [])
 
     useEffect(() => {
         if (user) {
@@ -573,13 +557,6 @@ export default function StatsPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className='space-y-4'>
-                                    <div className='text-center'>
-                                        <div className='text-3xl font-mono font-bold mb-2'>
-                                            {currentTime}
-                                        </div>
-                                        <p className='text-emerald-100 text-sm mb-4'>Current time</p>
-                                    </div>
-
                                     <div className='space-y-3'>
                                         <div className='flex items-center justify-between'>
                                             <span className='text-sm'>Active budgets:</span>
